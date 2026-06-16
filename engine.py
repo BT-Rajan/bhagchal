@@ -136,7 +136,7 @@ def init_state():
         'current_turn':  'tiger',
         'phase':         1,
         'status':        'active',
-        'move_history':  [],
+        'move_history':  {},
         'tiger_moves':   0,
         'goat_moves':    0,
     }
