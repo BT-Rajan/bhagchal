@@ -13,6 +13,8 @@ from flask import Flask, render_template, request, session, jsonify
 import engine as eng
 import game_store as gs
 import report
+import auth
+import ai
 
 # ══════════════════════════════════════════════════════════════
 #  AUTH MODULE (integrated)
@@ -32,84 +34,6 @@ def init_auth():
             'games_played': 0,
             'created_at': time.strftime('%Y-%m-%d %H:%M:%S'),
         }
-
-def current_user():
-    """Get the current logged-in user from session."""
-    if 'username' not in session:
-        return None
-    username = session.get('username')
-    return _users_db.get(username)
-
-def login(username, password):
-    """Authenticate user. Returns (ok, result)."""
-    user = _users_db.get(username)
-    if not user or user['password'] != password:
-        return False, 'Invalid username or password'
-    return True, user
-
-def register(username, password, email=''):
-    """Register new user. Returns (ok, result)."""
-    if username in _users_db:
-        return False, 'Username already exists'
-    if len(password) < 4:
-        return False, 'Password too short'
-    _users_db[username] = {
-        'username': username,
-        'password': password,
-        'email': email,
-        'role': 'user',
-        'games_played': 0,
-        'created_at': time.strftime('%Y-%m-%d %H:%M:%S'),
-    }
-    return True, _users_db[username]
-
-def delete_user(username):
-    """Delete a user."""
-    if username in _users_db:
-        del _users_db[username]
-
-def all_users():
-    """Return list of all users."""
-    return list(_users_db.values())
-
-def increment_games(username):
-    """Increment games_played counter."""
-    if username in _users_db:
-        _users_db[username]['games_played'] = _users_db[username].get('games_played', 0) + 1
-
-def generate_reset_token(username):
-    """Generate a password reset token (stub)."""
-    if username not in _users_db:
-        return None
-    return str(uuid.uuid4())
-
-def reset_password(username, token, password):
-    """Reset password with token (stub)."""
-    if username not in _users_db:
-        return False, 'User not found'
-    _users_db[username]['password'] = password
-    return True, 'Password reset'
-
-def login_required(f):
-    """Decorator to require login."""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'username' not in session:
-            return jsonify({'ok': False, 'error': 'Not authenticated'}), 401
-        return f(*args, **kwargs)
-    return decorated_function
-
-def admin_required(f):
-    """Decorator to require admin role."""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'username' not in session:
-            return jsonify({'ok': False, 'error': 'Not authenticated'}), 401
-        user = current_user()
-        if not user or user.get('role') != 'admin':
-            return jsonify({'ok': False, 'error': 'Admin required'}), 403
-        return f(*args, **kwargs)
-    return decorated_function
 
 # ══════════════════════════════════════════════════════════════
 #  AI MODULE (integrated — simple heuristic)
@@ -150,9 +74,6 @@ app = Flask(__name__)
 app.secret_key = 'baghchal-server-secret-change-in-production'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-
-# Initialize auth on startup
-init_auth()
 
 # ══════════════════════════════════════════════════════════════
 #  HELPERS
@@ -228,7 +149,7 @@ def _execute_action(game, action):
         ai_role = 'goat' if game['human_role'] == 'tiger' else 'tiger'
         ai_ts = time.time()
         ai_legal = eng.format_moves_list(eng.get_all_moves(new_state, ai_role))
-        ai_mv = find_best_move(new_state, ai_role, game['difficulty'])
+        ai_mv = ai.find_best_move(new_state, ai_role, game['difficulty'])
         if ai_mv:
             ai_action_type = ai_mv['type']
             ai_from = ai_mv.get('from', -1)
@@ -247,7 +168,7 @@ def _execute_action(game, action):
     if game['state']['status'] != 'active':
         game['end_time'] = time.time()
         report.export_game_report(game)
-        increment_games(game['username'])
+        auth.increment_games(game['username'])
 
     gs.save_game(game)
 
@@ -266,7 +187,7 @@ def _execute_action(game, action):
 
 @app.route('/')
 def index():
-    user = current_user()
+    user = auth.current_user()
     if not user:
         return render_template('auth.html')
     # Ensure session exists
@@ -279,11 +200,11 @@ def index():
                            current_game=session_data['current_game'])
 
 @app.route('/admin')
-@login_required
-@admin_required
+@auth.login_required
+@auth.admin_required
 def admin():
-    user = current_user()
-    users = all_users()
+    user = auth.current_user()
+    users = auth.all_users()
     return render_template('admin.html', user=user, users=users)
 
 # ══════════════════════════════════════════════════════════════
@@ -293,7 +214,7 @@ def admin():
 @app.route('/api/auth/login', methods=['POST'])
 def api_login():
     d = request.get_json()
-    ok, result = login(d.get('username', ''), d.get('password', ''))
+    ok, result = auth.login(d.get('username', ''), d.get('password', ''))
     if not ok:
         return jsonify({'ok': False, 'error': result}), 400
     session['username'] = result['username']
@@ -303,10 +224,10 @@ def api_login():
 @app.route('/api/auth/register', methods=['POST'])
 def api_register():
     d = request.get_json()
-    ok, result = register(d.get('username', ''), d.get('password', ''), d.get('email', ''))
+    ok, result = auth.register(d.get('username', ''), d.get('password', ''), d.get('email', ''))
     if not ok:
         return jsonify({'ok': False, 'error': result}), 400
-    login(result['username'], d.get('password', ''))
+    auth.login(result['username'], d.get('password', ''))
     session['username'] = result['username']
     session['role'] = result['role']
     return jsonify({'ok': True, 'username': result['username'], 'role': result['role']})
@@ -319,7 +240,7 @@ def api_logout():
 @app.route('/api/auth/forgot', methods=['POST'])
 def api_forgot():
     d = request.get_json()
-    token = generate_reset_token(d.get('username', ''))
+    token = auth.generate_reset_token(d.get('username', ''))
     if not token:
         return jsonify({'ok': False, 'error': 'Username not found.'}), 400
     return jsonify({'ok': True, 'token': token})
@@ -327,7 +248,7 @@ def api_forgot():
 @app.route('/api/auth/reset', methods=['POST'])
 def api_reset():
     d = request.get_json()
-    ok, msg = reset_password(d.get('username', ''), d.get('token', ''), d.get('password', ''))
+    ok, msg = auth.reset_password(d.get('username', ''), d.get('token', ''), d.get('password', ''))
     if not ok:
         return jsonify({'ok': False, 'error': msg}), 400
     return jsonify({'ok': True, 'message': msg})
@@ -337,7 +258,7 @@ def api_reset():
 # ══════════════════════════════════════════════════════════════
 
 @app.route('/api/game/next', methods=['GET'])
-@login_required
+@auth.login_required
 def api_next_game():
     """Return the next game in the session (creates it if needed)."""
     username = session['username']
@@ -389,7 +310,7 @@ def api_next_game():
     return jsonify({'ok': True, **_state_payload(game)})
 
 @app.route('/api/game/move', methods=['POST'])
-@login_required
+@auth.login_required
 def api_move():
     """Submit a move or place action."""
     d = request.get_json()
@@ -408,7 +329,7 @@ def api_move():
         game['state']['status'] = 'tiger_win' if game['human_role'] == 'goat' else 'goat_win'
         game['end_time'] = time.time()
         report.export_game_report(game)
-        increment_games(game['username'])
+        auth.increment_games(game['username'])
         gs.save_game(game)
         return jsonify({'ok': True, **_state_payload(game)})
 
@@ -441,7 +362,7 @@ def api_move():
         game['state']['status'] = 'tiger_win' if game['human_role'] == 'goat' else 'goat_win'
         game['end_time'] = time.time()
         report.export_game_report(game)
-        increment_games(game['username'])
+        auth.increment_games(game['username'])
         gs.save_game(game)
         return jsonify({'ok': True, **_state_payload(game)})
     else:
@@ -460,7 +381,7 @@ def api_move():
     return jsonify({'ok': True, **payload})
 
 @app.route('/api/game/timer', methods=['POST'])
-@login_required
+@auth.login_required
 def api_timer():
     d = request.get_json()
     game_id = d.get('game_id')
@@ -477,7 +398,7 @@ def api_timer():
 # ══════════════════════════════════════════════════════════════
 
 @app.route('/api/game/undo', methods=['POST'])
-@login_required
+@auth.login_required
 def api_undo():
     d = request.get_json()
     game_id = d.get('game_id')
@@ -495,7 +416,7 @@ def api_undo():
     return jsonify({'ok': True, **_state_payload(game)})
 
 @app.route('/api/game/resign', methods=['POST'])
-@login_required
+@auth.login_required
 def api_resign():
     d = request.get_json()
     game_id = d.get('game_id')
@@ -511,12 +432,12 @@ def api_resign():
     s['status'] = result
     game['end_time'] = time.time()
     report.export_game_report(game)
-    increment_games(session['username'])
+    auth.increment_games(session['username'])
     gs.save_game(game)
     return jsonify({'ok': True, **_state_payload(game)})
 
 @app.route('/api/game/draw', methods=['POST'])
-@login_required
+@auth.login_required
 def api_draw():
     d = request.get_json()
     game_id = d.get('game_id')
@@ -542,14 +463,14 @@ def api_draw():
 
         if game['mode'] == 'ai':
             ai_role = 'goat' if game['human_role'] == 'tiger' else 'tiger'
-            accepted = evaluate_for_draw(s, ai_role)
+            accepted = ai.evaluate_for_draw(s, ai_role)
             game['draw_offered'] = False
             game['draw_off_by'] = None
             if accepted:
                 s['status'] = 'draw_agreement'
                 game['end_time'] = time.time()
                 report.export_game_report(game)
-                increment_games(session['username'])
+                auth.increment_games(session['username'])
             gs.save_game(game)
             return jsonify({'ok': True, 'ai_response': 'accepted' if accepted else 'declined',
                             **_state_payload(game)})
@@ -565,7 +486,7 @@ def api_draw():
         game['draw_off_by'] = None
         game['end_time'] = time.time()
         report.export_game_report(game)
-        increment_games(session['username'])
+        auth.increment_games(session['username'])
         gs.save_game(game)
         return jsonify({'ok': True, **_state_payload(game)})
 
@@ -582,16 +503,16 @@ def api_draw():
 # ══════════════════════════════════════════════════════════════
 
 @app.route('/api/admin/users', methods=['GET'])
-@admin_required
+@auth.admin_required
 def api_admin_users():
     return jsonify({'users': all_users()})
 
 @app.route('/api/admin/delete', methods=['POST'])
-@admin_required
+@auth.admin_required
 def api_admin_delete():
     d = request.get_json()
     username = d.get('username', '')
-    delete_user(username)
+    auth.delete_user(username)
     return jsonify({'ok': True, 'users': all_users()})
 
 # ══════════════════════════════════════════════════════════════
