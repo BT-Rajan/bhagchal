@@ -1,0 +1,230 @@
+/* ══ Design tokens ══ */
+:root{
+  --bg:#0f0c07;--surface:#1a1610;--surface2:#231e15;
+  --border:rgba(212,175,80,.18);--border-bright:rgba(212,175,80,.45);
+  --gold:#d4af50;--text:#f0e8d0;--text-dim:rgba(240,232,208,.55);
+  --tiger:#e8712a;--tiger-dim:rgba(232,113,42,.25);
+  --goat:#e8e0cc;--valid:#4caf6e;--capture:#e85050;--radius:10px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px 16px 40px}
+h1.logo{font-family:'Tiro Devanagari Sanskrit',serif;font-size:40px;font-weight:400;
+  letter-spacing:.04em;color:var(--gold);line-height:1;margin-bottom:3px}
+.sub{font-size:10px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--text-dim)}
+.header{text-align:center;margin-bottom:22px}
+
+/* ── Panel ── */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px 13px;display:flex;flex-direction:column;gap:11px}
+.panel-title{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-dim);
+  padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+
+/* ── Form elements ── */
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)}
+.field input,.field select{background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  color:var(--text);font-family:'Inter',sans-serif;font-size:13px;padding:9px 12px;
+  outline:none;transition:border-color .2s;width:100%}
+.field input:focus,.field select:focus{border-color:var(--gold)}
+.field select option{background:var(--surface2)}
+.msg{font-size:11px;min-height:16px}
+.msg.err{color:var(--capture)}
+.msg.ok{color:var(--valid)}
+.msg.warn{color:#e8a030}
+.msg.gold{color:var(--gold)}
+
+/* ── Buttons ── */
+button.btn{background:transparent;border:1px solid var(--border-bright);color:var(--gold);
+  font-size:11px;font-family:'Inter',sans-serif;letter-spacing:.1em;text-transform:uppercase;
+  padding:7px 18px;border-radius:6px;cursor:pointer;transition:background .2s}
+button.btn:hover{background:rgba(212,175,80,.1)}
+button.btn:disabled{opacity:.3;cursor:default;pointer-events:none}
+button.btn.primary{background:rgba(212,175,80,.12)}
+button.btn.green{border-color:rgba(76,175,110,.5);color:var(--valid)}
+button.btn.green:hover{background:rgba(76,175,110,.1)}
+button.btn.danger{border-color:rgba(232,80,80,.5);color:var(--capture)}
+button.btn.danger:hover{background:rgba(232,80,80,.08)}
+button.btn.resign{border-color:rgba(232,80,80,.5);color:var(--capture)}
+button.btn.resign:hover{background:rgba(232,80,80,.1)}
+button.link-btn{background:none;border:none;color:var(--text-dim);font-size:11px;
+  font-family:'Inter',sans-serif;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+button.link-btn:hover{color:var(--gold)}
+
+/* ── Navbar ── */
+.navbar{width:100%;max-width:900px;display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:14px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)}
+.navbar-left{display:flex;align-items:center;gap:10px}
+.navbar-user{font-size:12px;color:var(--text-dim)}
+.navbar-user span{color:var(--gold);font-weight:600}
+.navbar-right{display:flex;gap:8px;align-items:center}
+.role-badge{font-size:9px;padding:2px 7px;border-radius:3px;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.role-badge.admin{background:rgba(232,113,42,.2);color:var(--tiger);border:1px solid rgba(232,113,42,.4)}
+.role-badge.user{background:rgba(212,175,80,.1);color:var(--gold);border:1px solid var(--border)}
+
+/* ── Tip banner ── */
+.tip-banner{width:100%;max-width:900px;display:flex;align-items:flex-start;gap:10px;
+  background:rgba(212,175,80,.06);border:1px solid var(--border);border-radius:var(--radius);
+  padding:10px 14px;font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.55}
+.tip-text b{color:var(--gold)}
+.tip-nav{display:flex;gap:6px;align-items:center;margin-left:auto;flex-shrink:0}
+.tip-nav button{background:none;border:1px solid var(--border);color:var(--text-dim);
+  font-size:10px;padding:3px 8px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif}
+.tip-nav button:hover{border-color:var(--gold);color:var(--gold)}
+.tip-num{font-size:10px;color:var(--text-dim)}
+
+/* ── Role/Mode selection ── */
+.role-screen{display:flex;flex-direction:column;align-items:center;gap:16px;max-width:440px;width:100%}
+.mode-row{display:flex;gap:10px;width:100%}
+.mode-btn{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:10px 12px;cursor:pointer;color:var(--text-dim);font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;transition:all .2s;font-family:'Inter',sans-serif}
+.mode-btn.active{border-color:var(--gold);color:var(--gold);background:var(--surface2)}
+.role-prompt{font-size:13px;color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase}
+.role-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%}
+.role-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px 14px;cursor:pointer;transition:border-color .2s,background .2s;
+  display:flex;flex-direction:column;align-items:center;gap:8px}
+.role-card:hover{border-color:var(--gold);background:var(--surface2)}
+.role-icon{font-size:34px}
+.role-name{font-size:15px;font-weight:600;letter-spacing:.05em}
+.role-card.tiger .role-name{color:var(--tiger)}
+.role-card.goat  .role-name{color:var(--goat)}
+.role-desc{font-size:11px;color:var(--text-dim);text-align:center;line-height:1.5}
+.wide-btn{width:100%;padding:14px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);color:var(--text);font-size:13px;font-family:'Inter',sans-serif;
+  cursor:pointer;transition:all .2s;letter-spacing:.04em}
+.wide-btn:hover{border-color:var(--gold);color:var(--gold);background:var(--surface2)}
+.wide-btn.gold{color:var(--gold);border-color:var(--border-bright)}
+
+/* ── Game layout ── */
+.game-screen{width:100%;max-width:900px}
+.game-layout{display:grid;grid-template-columns:155px 1fr 200px;gap:14px;align-items:start}
+
+/* Faction panels */
+.faction-label{font-size:13px;font-weight:600;letter-spacing:.05em}
+.faction-label.tiger{color:var(--tiger)}
+.faction-label.goat{color:var(--goat)}
+.stat-row{display:flex;justify-content:space-between;align-items:center}
+.stat-key{font-size:11px;color:var(--text-dim)}
+.stat-val{font-size:13px;font-weight:600;color:var(--text)}
+.turn-ind{font-size:11px;padding:5px 8px;border-radius:5px;text-align:center;font-weight:500;letter-spacing:.04em}
+.turn-ind.active{background:var(--tiger-dim);color:var(--tiger);border:1px solid var(--tiger)}
+.turn-ind.active.goat-t{background:rgba(232,224,204,.1);color:var(--goat);border-color:var(--goat)}
+.turn-ind.inactive{background:transparent;color:var(--text-dim);border:1px solid var(--border)}
+.phase-badge{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--gold);font-weight:500;letter-spacing:.08em}
+.phase-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0}
+.goat-reserve{display:flex;flex-wrap:wrap;gap:4px}
+.goat-pip{width:12px;height:12px;border-radius:50%;background:var(--goat);opacity:.7;transition:opacity .3s}
+.goat-pip.used{opacity:.1}
+.goat-pip.captured{background:var(--capture);opacity:.8}
+.capture-meter{display:flex;gap:4px}
+.cap-pip{width:18px;height:6px;border-radius:3px;background:var(--border);transition:background .3s}
+.cap-pip.filled{background:var(--capture)}
+
+/* Board */
+.board-wrap{display:flex;flex-direction:column;align-items:center;gap:10px}
+canvas{cursor:pointer;display:block;border-radius:8px}
+canvas.blocked{cursor:not-allowed;opacity:.85}
+
+/* History */
+.history-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px 13px;display:flex;flex-direction:column;gap:8px;max-height:440px}
+.history-scroll{overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:3px;
+  scrollbar-width:thin;scrollbar-color:rgba(212,175,80,.2) transparent}
+.history-scroll::-webkit-scrollbar{width:3px}
+.history-scroll::-webkit-scrollbar-thumb{background:rgba(212,175,80,.25);border-radius:2px}
+.move-entry{display:flex;align-items:center;gap:7px;padding:4px 6px;border-radius:5px;font-size:11px}
+.move-entry:last-child{background:rgba(212,175,80,.07)}
+.move-num{color:var(--text-dim);min-width:20px;font-size:10px}
+.move-icon{font-size:13px;flex-shrink:0}
+.move-desc{color:var(--text);flex:1;line-height:1.3}
+.move-badge{font-size:9px;padding:1px 5px;border-radius:3px;font-weight:600;letter-spacing:.05em}
+.move-badge.cap{background:rgba(232,80,80,.2);color:var(--capture)}
+.save-dot{width:6px;height:6px;border-radius:50%;background:var(--valid);display:inline-block;opacity:0;transition:opacity .4s}
+.save-dot.flash{opacity:1}
+
+/* Status bar */
+.status-bar{grid-column:1/-1;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:9px 16px;font-size:12px;color:var(--text-dim);
+  text-align:center;min-height:38px;display:flex;align-items:center;justify-content:center}
+.status-bar.warn{color:#e8a030;border-color:rgba(232,160,48,.35)}
+.status-bar.ok{color:var(--valid);border-color:rgba(76,175,110,.35)}
+.status-bar.err{color:var(--capture);border-color:rgba(232,80,80,.35)}
+.status-bar.gold{color:var(--gold);border-color:var(--border-bright)}
+
+/* Legend */
+.legend{grid-column:1/-1;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-size:10px;color:var(--text-dim)}
+.legend-item{display:flex;align-items:center;gap:5px}
+.leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+
+/* Button row */
+.btn-row{grid-column:1/-1;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+
+/* Draw banner */
+.draw-banner{display:none;grid-column:1/-1;background:rgba(76,175,110,.1);
+  border:1px solid rgba(76,175,110,.35);border-radius:var(--radius);
+  padding:10px 16px;font-size:12px;color:var(--valid);
+  align-items:center;justify-content:center;gap:12px}
+.draw-banner.show{display:flex}
+.draw-banner button{background:rgba(76,175,110,.15);border:1px solid rgba(76,175,110,.5);
+  color:var(--valid);font-size:11px;padding:4px 12px;border-radius:4px;
+  cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.05em}
+.draw-banner button.decline{background:transparent;border-color:rgba(232,80,80,.4);color:var(--capture)}
+
+/* Overlays */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:100;align-items:center;justify-content:center}
+.overlay.show{display:flex}
+.overlay-card{background:var(--surface);border:1px solid var(--border-bright);border-radius:14px;
+  padding:36px 42px;max-width:380px;width:92%;display:flex;flex-direction:column;gap:14px;text-align:center}
+.overlay-card .big{font-family:'Tiro Devanagari Sanskrit',serif;font-size:52px;color:var(--gold);margin-bottom:4px}
+.overlay-card h2{font-size:20px;font-weight:600;margin-bottom:4px;letter-spacing:.04em}
+.overlay-card p{font-size:13px;color:var(--text-dim);line-height:1.6}
+.overlay-card .icon{font-size:52px;margin-bottom:8px}
+.modal-stats{display:flex;gap:20px;justify-content:center}
+.modal-stat .n{font-size:22px;font-weight:600}
+.modal-stat .l{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.1em}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(212,175,80,.3);
+  border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Handover */
+.handover-title{font-size:22px;font-weight:600;letter-spacing:.04em}
+.handover-title.tiger{color:var(--tiger)}
+.handover-title.goat{color:var(--goat)}
+
+/* AI depth badge */
+.depth-badge{font-size:9px;padding:1px 6px;border-radius:3px;background:rgba(212,175,80,.12);
+  color:var(--gold);letter-spacing:.06em}
+
+/* Admin */
+.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;max-width:900px}
+.user-row{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;
+  border-radius:6px;font-size:12px;border:1px solid var(--border)}
+.user-row:hover{background:var(--surface2)}
+
+/* AI indicator bar during thinking */
+.ai-bar{grid-column:1/-1;display:none;align-items:center;gap:10px;
+  background:rgba(212,175,80,.06);border:1px solid var(--border-bright);
+  border-radius:var(--radius);padding:9px 14px;font-size:12px;color:var(--gold)}
+.ai-bar.show{display:flex}
+
+@media(max-width:640px){
+  .game-layout{grid-template-columns:1fr}
+  .admin-grid{grid-template-columns:1fr}
+  .history-panel{max-height:200px}
+  .role-cards{grid-template-columns:1fr}
+}
+
+#timer-display {
+  font-family: 'Tiro Devanagari Sanskrit', monospace;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--gold);
+  background: rgba(0,0,0,0.4);
+  padding: 2px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(212,175,80,0.3);
+  min-width: 60px;
+  text-align: center;
+}

@@ -1,26 +1,60 @@
-# Python cache
+```
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
 # Virtual environments
 venv/
 env/
 ENV/
+.venv/
+.env/
 
-# Runtime game reports
-game_reports/
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # Logs
 *.log
 
-# OS junk
+# Environment
+.env
+.env.local
+*.env.*
+
+# Coverage
+.coverage
+coverage/
+htmlcov/
+
+# Distribution
+dist/
+build/
+*.tar.gz
+*.whl
+
+# Temporary files
+*.tmp
 .DS_Store
 Thumbs.db
-
-# IDE files
-.vscode/
-.idea/
-
-# Environment secrets
-.env
+```
