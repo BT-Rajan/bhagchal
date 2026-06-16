@@ -87,9 +87,9 @@ def check_end(state):
     if (state['current_turn'] == 'tiger'
             and len(get_all_moves(state, 'tiger')) == 0):
         return 'goat_win'
-    if state['phase'] == 2 and len(state['move_history']) >= 3:
+    if state['phase'] == 2:
         cur = board_hash(state['board'])
-        if state['move_history'].count(cur) >= 3:
+        if state['move_history'].get(cur, 0) >= 3:
             return 'draw_repetition'
     return 'active'
 
@@ -119,9 +119,8 @@ def apply_move(state, action):
     ns['current_turn'] = 'goat' if ns['current_turn'] == 'tiger' else 'tiger'
 
     if ns['phase'] == 2:
-        ns['move_history'].append(board_hash(ns['board']))
-        if len(ns['move_history']) > 9:
-            ns['move_history'].pop(0)
+        h = board_hash(ns['board'])
+        ns['move_history'][h] = ns['move_history'].get(h, 0) + 1
 
     ns['status'] = check_end(ns)
     return ns, captured_node
