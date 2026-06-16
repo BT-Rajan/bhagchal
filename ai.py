@@ -91,7 +91,8 @@ def _fast_apply(state, action):
 
     if phase == 2:
         h = board_hash(board)
-        move_history = (move_history[-8:] + [h])  # new list, cap at 9
+        move_history = dict(move_history)
+        move_history[h] = move_history.get(h, 0) + 1
     else:
         move_history = move_history  # same ref is fine (Phase 1 never tracks)
 
