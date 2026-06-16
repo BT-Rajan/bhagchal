@@ -113,7 +113,7 @@ def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if 'username' not in session:
-            return jsonify({'error': 'Not authenticated', 'redirect': '/'}), 401
+            return jsonify({'ok': False, 'error': 'Not authenticated'}), 401
         return f(*args, **kwargs)
     return decorated
 
@@ -122,10 +122,10 @@ def admin_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if 'username' not in session:
-            return jsonify({'error': 'Not authenticated'}), 401
+            return jsonify({'ok': False, 'error': 'Not authenticated'}), 401
         user = get_user(session['username'])
         if not user or user['role'] != 'admin':
-            return jsonify({'error': 'Admin access required'}), 403
+            return jsonify({'ok': False, 'error': 'Admin access required'}), 403
         return f(*args, **kwargs)
     return decorated
 
