@@ -17,56 +17,6 @@ import auth
 import ai
 
 # ══════════════════════════════════════════════════════════════
-#  AUTH MODULE (integrated)
-# ══════════════════════════════════════════════════════════════
-
-_users_db = {}  # username -> {'username': ..., 'password': ..., 'role': ..., 'games_played': ..., 'created_at': ...}
-
-def init_auth():
-    """Initialize default admin user."""
-    global _users_db
-    if 'admin' not in _users_db:
-        _users_db['admin'] = {
-            'username': 'admin',
-            'password': 'admin123',  # CHANGE IN PRODUCTION
-            'email': 'admin@localhost',
-            'role': 'admin',
-            'games_played': 0,
-            'created_at': time.strftime('%Y-%m-%d %H:%M:%S'),
-        }
-
-# ══════════════════════════════════════════════════════════════
-#  AI MODULE (integrated — simple heuristic)
-# ══════════════════════════════════════════════════════════════
-
-def find_best_move(state, faction, difficulty='medium'):
-    """Find the best move for AI. Returns a move dict or None."""
-    moves = eng.get_all_moves(state, faction)
-    if not moves:
-        return None
-    
-    # Simple strategy: prioritize captures, then center control
-    if faction == 'tiger':
-        # Tigers prefer capturing goats
-        cap_moves = [m for m in moves if m.get('capture', -1) >= 0]
-        if cap_moves:
-            return cap_moves[0]
-    
-    # Otherwise, prefer moves toward center
-    moves.sort(key=lambda m: eng.CENTER_WEIGHTS[m['to']], reverse=True)
-    return moves[0]
-
-def evaluate_for_draw(state, faction):
-    """Evaluate if AI should accept a draw offer."""
-    # Simple: accept if not winning
-    moves = eng.get_all_moves(state, faction)
-    if len(moves) <= 3:
-        return True  # Accept if desperate
-    if faction == 'tiger' and state['goats_captured'] >= 3:
-        return False  # Don't accept if winning
-    return True
-
-# ══════════════════════════════════════════════════════════════
 #  Flask App
 # ══════════════════════════════════════════════════════════════
 
@@ -168,7 +118,7 @@ def _execute_action(game, action):
     if game['state']['status'] != 'active':
         game['end_time'] = time.time()
         report.export_game_report(game)
-        auth.auth.increment_games(game['username'])
+        auth.auth.auth.increment_games(game['username'])
 
     gs.save_game(game)
 
@@ -227,7 +177,7 @@ def api_register():
     ok, result = auth.register(d.get('username', ''), d.get('password', ''), d.get('email', ''))
     if not ok:
         return jsonify({'ok': False, 'error': result}), 400
-    auth.auth.login(result['username'], d.get('password', ''))
+    auth.auth.auth.login(result['username'], d.get('password', ''))
     session['username'] = result['username']
     session['role'] = result['role']
     return jsonify({'ok': True, 'username': result['username'], 'role': result['role']})
@@ -329,7 +279,7 @@ def api_move():
         game['state']['status'] = 'tiger_win' if game['human_role'] == 'goat' else 'goat_win'
         game['end_time'] = time.time()
         report.export_game_report(game)
-        auth.auth.increment_games(game['username'])
+        auth.auth.auth.increment_games(game['username'])
         gs.save_game(game)
         return jsonify({'ok': True, **_state_payload(game)})
 
@@ -362,7 +312,7 @@ def api_move():
         game['state']['status'] = 'tiger_win' if game['human_role'] == 'goat' else 'goat_win'
         game['end_time'] = time.time()
         report.export_game_report(game)
-        auth.auth.increment_games(game['username'])
+        auth.auth.auth.increment_games(game['username'])
         gs.save_game(game)
         return jsonify({'ok': True, **_state_payload(game)})
     else:
@@ -432,7 +382,7 @@ def api_resign():
     s['status'] = result
     game['end_time'] = time.time()
     report.export_game_report(game)
-    auth.auth.increment_games(session['username'])
+    auth.auth.auth.increment_games(session['username'])
     gs.save_game(game)
     return jsonify({'ok': True, **_state_payload(game)})
 
@@ -470,7 +420,7 @@ def api_draw():
                 s['status'] = 'draw_agreement'
                 game['end_time'] = time.time()
                 report.export_game_report(game)
-                auth.auth.increment_games(session['username'])
+                auth.auth.auth.increment_games(session['username'])
             gs.save_game(game)
             return jsonify({'ok': True, 'ai_response': 'accepted' if accepted else 'declined',
                             **_state_payload(game)})
@@ -486,7 +436,7 @@ def api_draw():
         game['draw_off_by'] = None
         game['end_time'] = time.time()
         report.export_game_report(game)
-        auth.auth.increment_games(session['username'])
+        auth.auth.auth.increment_games(session['username'])
         gs.save_game(game)
         return jsonify({'ok': True, **_state_payload(game)})
 
@@ -512,7 +462,7 @@ def api_admin_users():
 def api_admin_delete():
     d = request.get_json()
     username = d.get('username', '')
-    auth.auth.delete_user(username)
+    auth.auth.auth.delete_user(username)
     return jsonify({'ok': True, 'users': all_users()})
 
 # ══════════════════════════════════════════════════════════════
