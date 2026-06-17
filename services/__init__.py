@@ -9,6 +9,8 @@ from .engine import (
 )
 from .ai import AIService
 from .report import ReportService
+from .analysis_service import analyze_report, AnalysisError
+from .mailer import send_report_email, MailError
 
 __all__ = [
     'GameEngine',
@@ -17,5 +19,9 @@ __all__ = [
     'format_move',
     'format_moves_list',
     'AIService',
-    'ReportService'
+    'ReportService',
+    'analyze_report',
+    'AnalysisError',
+    'send_report_email',
+    'MailError'
 ]

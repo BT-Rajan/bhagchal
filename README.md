@@ -145,13 +145,40 @@ Each user gets a 5-game session with progressive difficulty:
 - **Password Hashing**: Uses SHA-256 (upgrade to bcrypt/argon2 for production)
 - **Server-Authoritative**: All game logic runs server-side; browser only renders
 
-## Optional: Personality Analysis
+## Optional: Automatic Personality Analysis + Email
 
-`analyze.py` reads an exported game report JSON (saved under `game_reports/` after a game ends) and uses the DeepSeek API to summarize a player's style. It needs a `.env` file with `DEEPSEEK_API_KEY=...` and is run separately from the web app:
+As soon as a game ends (win, loss, draw, or resign) and its report JSON is written to `game_reports/`, the server automatically runs it through the DeepSeek API in a background thread and emails the resulting personality profile to the player — without blocking the game-ending request. If a game had no human moves, or the API key/network call fails, this is skipped/logged quietly and never affects gameplay.
+
+Configure it via `.env` in the repo root:
+
+```bash
+# Required for analysis to run at all
+DEEPSEEK_API_KEY=your_key_here
+
+# MAIL_MODE=development (default): nothing is actually emailed. Instead, a
+# mail/<report-name>.log file is written showing exactly what would have
+# been sent (To/From/Subject/Body) -- handy for local testing.
+MAIL_MODE=development
+
+# MAIL_MODE=production: sends a real email via SMTP using the settings below.
+# Recipient is the player's registered email, plus anyone in MAIL_TO.
+# MAIL_MODE=production
+# SMTP_HOST=smtp.example.com
+# SMTP_PORT=587
+# SMTP_USERNAME=you@example.com
+# SMTP_PASSWORD=app-password
+# SMTP_USE_TLS=1
+# MAIL_FROM=noreply@yourdomain.com
+# MAIL_TO=admin@yourdomain.com   # optional extra recipient(s), comma-separated
+```
+
+You can also still run it manually on any existing report (useful for backfilling or re-running):
 
 ```bash
 python3 analyze.py game_reports/<report-file>.json
 ```
+
+This prints the analysis and saves it to `game_reports/<report-file>_analysis.txt`.
 
 ## License
 

@@ -1,11 +1,17 @@
 """
 Game report export service.
 
-Exports completed games to JSON files for analysis.
+Exports completed games to JSON files for analysis. As soon as a report
+is written, a background thread runs it through the DeepSeek-powered
+analysis service and emails the result (or, in development, writes a
+mock email log under MAIL_DIR) -- see services/analysis_service.py and
+services/mailer.py.
 """
 import json
 import os
+import threading
 import time
+import traceback
 from datetime import datetime
 from typing import Dict, Any
 
@@ -84,7 +90,42 @@ class ReportService:
         with open(filepath, 'w') as f:
             json.dump(report, f, indent=2)
         
+        self._notify_async(report, filepath)
+        
         return filepath
+    
+    def _notify_async(self, report: Dict[str, Any], filepath: str) -> None:
+        """Kick off analysis + email in a background thread (never blocks the caller)."""
+        thread = threading.Thread(
+            target=self._analyze_and_send,
+            args=(report, filepath),
+            daemon=True
+        )
+        thread.start()
+    
+    @staticmethod
+    def _analyze_and_send(report: Dict[str, Any], filepath: str) -> None:
+        """Run the analysis pipeline and email/log the result. Never raises."""
+        from services.analysis_service import analyze_report, AnalysisError
+        from services.mailer import send_report_email, MailError
+        
+        try:
+            analysis_text = analyze_report(report)
+        except AnalysisError as e:
+            print(f"[report] Skipping email for {filepath}: {e}")
+            return
+        except Exception:
+            print(f"[report] Unexpected error analyzing {filepath}:")
+            traceback.print_exc()
+            return
+        
+        try:
+            send_report_email(report, analysis_text, filepath)
+        except MailError as e:
+            print(f"[report] Failed to deliver report email for {filepath}: {e}")
+        except Exception:
+            print(f"[report] Unexpected error emailing report {filepath}:")
+            traceback.print_exc()
 
 
 # Singleton instance

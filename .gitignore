@@ -59,3 +59,6 @@ Thumbs.db
 
 # Runtime game report exports
 game_reports/
+
+# Development-mode mock email output
+mail/
