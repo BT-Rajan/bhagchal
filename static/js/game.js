@@ -26,12 +26,24 @@ function showTip(idx) {
 window.tipNext = () => showTip(_tipIdx + 1);
 window.tipPrev = () => showTip(_tipIdx - 1);
 
+/* ── Game-over result display data ── */
+const RESULTS = {
+  tiger_win:       { icon: '🐯', title: 'Tigers Win!',  sub: '5 goats captured. The hunt is over.' },
+  goat_win:        { icon: '🐐', title: 'Goats Win!',   sub: 'All tigers are trapped. The herd prevails.' },
+  draw_agreement:  { icon: '🤝', title: 'Draw Agreed',  sub: 'Both players agreed to a draw.' },
+  draw_no_moves:   { icon: '⚖️', title: 'Draw',         sub: 'Goats have no legal moves. Draw.' },
+  draw_repetition: { icon: '🔄', title: 'Draw',         sub: 'Threefold repetition. Draw.' },
+  tiger_resigned:  { icon: '🏳️', title: 'Tigers Resigned', sub: 'Goats win by forfeit.' },
+  goat_resigned:   { icon: '🏳️', title: 'Goats Resigned',  sub: 'Tigers win by forfeit.' },
+};
+
 /* ── State ── */
 let _gameId     = null;
 let _state      = null;
 let _selected   = -1;
 let _validMoves = [];
 let _locked     = false;
+let _handoverShown = false;
 
 // Timer state
 let _timerInterval = null;
@@ -426,7 +438,7 @@ async function doAction(actionType, extra = {}) {
   const body = { game_id: _gameId, action_type: actionType, ...extra };
   let d;
   try {
-    d = await post('/api/game/action', body);
+    d = await post('/api/game/move', body);
   } catch (e) {
     _locked = false;
     $cls('board', 'remove', 'blocked');
@@ -461,6 +473,7 @@ async function doAction(actionType, extra = {}) {
   const afterHuman = () => {
     _state = d;
     Board.setBoard(d.board);
+    const justEnteredPhase2 = wasPhase1 && d.phase === 2 && d.status === 'active';
 
     if (d.ai_action_type && d.ai_to >= 0) {
       setStatus('Computer moved.', 'gold');
@@ -474,6 +487,7 @@ async function doAction(actionType, extra = {}) {
         Board.draw();
         postMoveStatus();
         if (d.status !== 'active') showResult(d.status);
+        else if (justEnteredPhase2) showPhaseOverlay();
         // Show next game button if available
         if (d.next_game_available) {
           const btn = $id('next-game-btn');
@@ -487,6 +501,7 @@ async function doAction(actionType, extra = {}) {
       Board.draw();
       postMoveStatus();
       if (d.status !== 'active') showResult(d.status);
+      else if (justEnteredPhase2) showPhaseOverlay();
       if (d.next_game_available) {
         const btn = $id('next-game-btn');
         if (btn) { btn.style.display = 'inline-block'; btn.disabled = false; }
@@ -503,14 +518,126 @@ async function doAction(actionType, extra = {}) {
   }
 }
 
-/* ── Game actions (unchanged) ── */
-window.doUndo = async function() { /* ... */ };
-window.doResign = async function() { /* ... */ };
-window.doOfferDraw = async function() { /* ... */ };
-window.doAcceptDraw = async function() { /* ... */ };
-window.doDeclineDraw = async function() { /* ... */ };
-window.dismissHandover = function() { /* ... */ };
-window.dismissPhaseOverlay = function() { /* ... */ };
+/* ── Apply a fresh server state (used by undo/resign/draw responses) ── */
+function applyServerState(d) {
+  _state = d;
+  _selected = -1;
+  _validMoves = [];
+  Board.setBoard(d.board);
+  Board.setSelected(-1);
+  Board.setValidMoves([]);
+  updateUI(d);
+  rebuildLog(d.move_log || []);
+  Board.draw();
+  postMoveStatus();
+  if (d.next_game_available) {
+    const btn = $id('next-game-btn');
+    if (btn) { btn.style.display = 'inline-block'; btn.disabled = false; }
+  }
+}
+
+/* ── Game actions ── */
+window.doUndo = async function() {
+  if (!_gameId || _locked) return;
+  _locked = true;
+  try {
+    const d = await post('/api/game/undo', { game_id: _gameId });
+    applyServerState(d);
+  } catch (e) {
+    setStatus('Error: ' + e.message, 'err');
+    alert('Undo error: ' + e.message);
+  } finally {
+    _locked = false;
+  }
+};
+
+window.doResign = async function() {
+  if (!_gameId || _locked) return;
+  if (!confirm('Are you sure you want to resign this game?')) return;
+  stopTimer();
+  _locked = true;
+  try {
+    const d = await post('/api/game/resign', { game_id: _gameId });
+    applyServerState(d);
+  } catch (e) {
+    setStatus('Error: ' + e.message, 'err');
+    alert('Resign error: ' + e.message);
+    _locked = false;
+  }
+};
+
+window.doOfferDraw = async function() {
+  if (!_gameId || _locked) return;
+  try {
+    const d = await post('/api/game/draw', { game_id: _gameId, action: 'offer' });
+    applyServerState(d);
+    if (d.ai_response) {
+      setStatus(d.ai_response === 'accepted' ? 'Computer accepted the draw.' : 'Computer declined the draw offer.',
+        d.ai_response === 'accepted' ? 'ok' : 'warn');
+    }
+  } catch (e) {
+    setStatus('Error: ' + e.message, 'err');
+    alert('Draw offer error: ' + e.message);
+  }
+};
+
+window.doAcceptDraw = async function() {
+  if (!_gameId) return;
+  try {
+    const d = await post('/api/game/draw', { game_id: _gameId, action: 'accept' });
+    applyServerState(d);
+  } catch (e) {
+    setStatus('Error: ' + e.message, 'err');
+    alert('Draw error: ' + e.message);
+  }
+};
+
+window.doDeclineDraw = async function() {
+  if (!_gameId) return;
+  try {
+    const d = await post('/api/game/draw', { game_id: _gameId, action: 'decline' });
+    applyServerState(d);
+  } catch (e) {
+    setStatus('Error: ' + e.message, 'err');
+    alert('Draw error: ' + e.message);
+  }
+};
+
+/* ── Hotseat "pass the device" handover overlay ── */
+function showHandover(turn, phase) {
+  if (_handoverShown) return;
+  _handoverShown = true;
+  _locked = true;
+  const icon = $id('handover-icon');
+  const title = $id('handover-title');
+  const sub = $id('handover-sub');
+  if (icon) icon.textContent = turn === 'tiger' ? '🐯' : '🐐';
+  if (title) {
+    title.textContent = turn === 'tiger' ? "Tiger's Turn" : "Goat's Turn";
+    title.className = 'handover-title ' + turn;
+  }
+  if (sub) sub.textContent = phase === 1 ? 'Pass the device — place a goat or move a tiger.' : 'Pass the device.';
+  $cls('handover-overlay', 'add', 'show');
+}
+
+window.dismissHandover = function() {
+  $cls('handover-overlay', 'remove', 'show');
+  _handoverShown = false;
+  _locked = false;
+  Board.draw();
+};
+
+/* ── Phase 1 -> Phase 2 transition overlay ── */
+function showPhaseOverlay() {
+  _locked = true;
+  $cls('phase-overlay', 'add', 'show');
+}
+
+window.dismissPhaseOverlay = function() {
+  $cls('phase-overlay', 'remove', 'show');
+  _locked = false;
+  Board.draw();
+};
 
 /* ── Next Game button handler ── */
 window.goToNextGame = function() {

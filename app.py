@@ -4,10 +4,7 @@ Integrated: auth, AI stubs, game lifecycle, admin panel, session management.
 """
 import copy
 import time
-import uuid
-import json
 import os
-from functools import wraps
 from flask import Flask, render_template, request, session, jsonify
 
 import engine as eng
@@ -59,11 +56,15 @@ def _state_payload(game):
 def _log_move(game, faction, desc, is_capture, timestamp, legal_moves):
     gs.add_move_log(game, faction, desc, is_capture, timestamp, legal_moves)
 
+def _next_game_flag(username):
+    """True if the user's session still has games remaining after this one."""
+    session_data = gs.get_session(username)
+    return bool(session_data and session_data['current_game'] <= 5)
+
 def _execute_action(game, action):
     """Apply action to game state, handle AI follow-up. Returns updated payload."""
     s = game['state']
     faction = s['current_turn']
-    was_phase1 = (s['phase'] == 1)
 
     # Snapshot pre-human state for undo
     if game['mode'] == 'ai' and faction == game['human_role']:
@@ -118,7 +119,7 @@ def _execute_action(game, action):
     if game['state']['status'] != 'active':
         game['end_time'] = time.time()
         report.export_game_report(game)
-        auth.auth.auth.increment_games(game['username'])
+        auth.increment_games(game['username'])
 
     gs.save_game(game)
 
@@ -177,7 +178,7 @@ def api_register():
     ok, result = auth.register(d.get('username', ''), d.get('password', ''), d.get('email', ''))
     if not ok:
         return jsonify({'ok': False, 'error': result}), 400
-    auth.auth.auth.login(result['username'], d.get('password', ''))
+    auth.login(result['username'], d.get('password', ''))
     session['username'] = result['username']
     session['role'] = result['role']
     return jsonify({'ok': True, 'username': result['username'], 'role': result['role']})
@@ -279,7 +280,7 @@ def api_move():
         game['state']['status'] = 'tiger_win' if game['human_role'] == 'goat' else 'goat_win'
         game['end_time'] = time.time()
         report.export_game_report(game)
-        auth.auth.auth.increment_games(game['username'])
+        auth.increment_games(game['username'])
         gs.save_game(game)
         return jsonify({'ok': True, **_state_payload(game)})
 
@@ -312,7 +313,7 @@ def api_move():
         game['state']['status'] = 'tiger_win' if game['human_role'] == 'goat' else 'goat_win'
         game['end_time'] = time.time()
         report.export_game_report(game)
-        auth.auth.auth.increment_games(game['username'])
+        auth.increment_games(game['username'])
         gs.save_game(game)
         return jsonify({'ok': True, **_state_payload(game)})
     else:
@@ -382,9 +383,11 @@ def api_resign():
     s['status'] = result
     game['end_time'] = time.time()
     report.export_game_report(game)
-    auth.auth.auth.increment_games(session['username'])
+    auth.increment_games(session['username'])
     gs.save_game(game)
-    return jsonify({'ok': True, **_state_payload(game)})
+    payload = _state_payload(game)
+    payload['next_game_available'] = _next_game_flag(game['username'])
+    return jsonify({'ok': True, **payload})
 
 @app.route('/api/game/draw', methods=['POST'])
 @auth.login_required
@@ -420,10 +423,12 @@ def api_draw():
                 s['status'] = 'draw_agreement'
                 game['end_time'] = time.time()
                 report.export_game_report(game)
-                auth.auth.auth.increment_games(session['username'])
+                auth.increment_games(session['username'])
             gs.save_game(game)
+            payload = _state_payload(game)
+            payload['next_game_available'] = _next_game_flag(game['username']) if accepted else None
             return jsonify({'ok': True, 'ai_response': 'accepted' if accepted else 'declined',
-                            **_state_payload(game)})
+                            **payload})
 
         gs.save_game(game)
         return jsonify({'ok': True, **_state_payload(game)})
@@ -436,9 +441,11 @@ def api_draw():
         game['draw_off_by'] = None
         game['end_time'] = time.time()
         report.export_game_report(game)
-        auth.auth.auth.increment_games(session['username'])
+        auth.increment_games(session['username'])
         gs.save_game(game)
-        return jsonify({'ok': True, **_state_payload(game)})
+        payload = _state_payload(game)
+        payload['next_game_available'] = _next_game_flag(game['username'])
+        return jsonify({'ok': True, **payload})
 
     elif action == 'decline':
         game['draw_offered'] = False
@@ -455,15 +462,15 @@ def api_draw():
 @app.route('/api/admin/users', methods=['GET'])
 @auth.admin_required
 def api_admin_users():
-    return jsonify({'users': all_users()})
+    return jsonify({'users': auth.all_users()})
 
 @app.route('/api/admin/delete', methods=['POST'])
 @auth.admin_required
 def api_admin_delete():
     d = request.get_json()
     username = d.get('username', '')
-    auth.auth.auth.delete_user(username)
-    return jsonify({'ok': True, 'users': all_users()})
+    auth.delete_user(username)
+    return jsonify({'ok': True, 'users': auth.all_users()})
 
 # ══════════════════════════════════════════════════════════════
 #  RUN
@@ -472,6 +479,5 @@ def api_admin_delete():
 report.ensure_dir()
 
 if __name__ == '__main__':
-    import os
     debug_mode = os.environ.get('FLASK_DEBUG', '0') == '1'
     app.run(debug=debug_mode, port=5000, host='127.0.0.1')

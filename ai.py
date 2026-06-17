@@ -5,7 +5,7 @@ Ported from JS AI module. Two heuristics: Tiger and Goat.
 import random
 from engine import (
     N, ADJ, CENTER_WEIGHTS, get_moves_for, get_all_moves,
-    check_end, board_hash, apply_move
+    check_end, board_hash
 )
 
 DEPTH_MAP = {'easy': 1, 'medium': 3, 'hard': 4}

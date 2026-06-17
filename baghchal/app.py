@@ -21,7 +21,7 @@ def create_app(config_name='default'):
     from baghchal.config import config
     from baghchal.api import auth_bp, game_bp
     from baghchal.utils.decorators import current_user
-    from baghchal.models.game import session_store, game_store
+    from baghchal.models.game import session_store
     
     app = Flask(__name__)
     app.config.from_object(config[config_name])
@@ -52,7 +52,6 @@ def create_app(config_name='default'):
     @app.route('/admin')
     @app.route('/admin/')
     def admin():
-        from baghchal.utils.decorators import login_required, admin_required
         from baghchal.models.user import user_model
         
         # Check admin access
@@ -72,7 +71,6 @@ def create_app(config_name='default'):
     # Admin API routes (inline for simplicity)
     @app.route('/api/admin/users', methods=['GET'])
     def api_admin_users():
-        from baghchal.utils.decorators import login_required, admin_required
         from baghchal.models.user import user_model
         from flask import jsonify
         
@@ -89,7 +87,6 @@ def create_app(config_name='default'):
     
     @app.route('/api/admin/delete', methods=['POST'])
     def api_admin_delete():
-        from baghchal.utils.decorators import login_required, admin_required
         from baghchal.models.user import user_model
         from flask import request, jsonify
         

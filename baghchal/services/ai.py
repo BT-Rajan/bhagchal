@@ -4,7 +4,7 @@ AI service for Bagh Chal.
 Minimax algorithm with Alpha-Beta pruning for computer opponents.
 """
 import random
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 from baghchal.services.engine import (
     N, ADJ, CENTER_WEIGHTS, GameEngine, board_hash
 )
@@ -99,7 +99,8 @@ class AIService:
         
         if phase == 2:
             h = board_hash(board)
-            move_history = (move_history[-8:] + [h]) if isinstance(move_history, list) else {h: 1}
+            move_history = dict(move_history)
+            move_history[h] = move_history.get(h, 0) + 1
         
         return {
             'board': board,

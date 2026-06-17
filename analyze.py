@@ -6,7 +6,6 @@ to analyze the player's personality, play style, strengths, and weaknesses.
 import os
 import json
 import sys
-from datetime import datetime
 from dotenv import load_dotenv
 import requests
 

@@ -322,7 +322,10 @@ def resign():
     user_model.increment_games(username)
     game_store.save_game(game)
     
-    return jsonify({'ok': True, **_state_payload(game)})
+    payload = _state_payload(game)
+    sess = session_store.get_session(username)
+    payload['next_game_available'] = bool(sess and sess['current_game'] <= 5)
+    return jsonify({'ok': True, **payload})
 
 
 @game_bp.route('/draw', methods=['POST'])
@@ -343,10 +346,38 @@ def draw_offer():
         return jsonify({'ok': False, 'error': 'Game already over'}), 400
     
     if action == 'offer':
+        if game['state']['phase'] < 2:
+            return jsonify({'ok': False, 'error': 'Draw only available in Phase 2'}), 400
         if game['draw_offered']:
             return jsonify({'ok': False, 'error': 'Draw already offered'}), 400
+        if game['mode'] == 'ai' and game['state']['current_turn'] != game['human_role']:
+            return jsonify({'ok': False, 'error': 'Not your turn'}), 400
+        
         game['draw_offered'] = True
-        game['draw_off_by'] = username
+        game['draw_off_by'] = game['state']['current_turn']
+        
+        ai_response = None
+        if game['mode'] == 'ai':
+            # No human opponent to click "Accept" - the AI must decide right away.
+            ai_role = 'goat' if game['human_role'] == 'tiger' else 'tiger'
+            accepted = ai_service.should_accept_draw(game['state'], ai_role)
+            game['draw_offered'] = False
+            game['draw_off_by'] = None
+            ai_response = 'accepted' if accepted else 'declined'
+            if accepted:
+                game['state']['status'] = 'draw_agreement'
+                game['end_time'] = time.time()
+                report_service.export_game_report(game)
+                user_model.increment_games(username)
+        
+        game_store.save_game(game)
+        payload = _state_payload(game)
+        if ai_response:
+            payload['ai_response'] = ai_response
+        if game['state']['status'] != 'active':
+            sess = session_store.get_session(username)
+            payload['next_game_available'] = bool(sess and sess['current_game'] <= 5)
+        return jsonify({'ok': True, **payload})
     
     elif action == 'accept':
         if not game['draw_offered']:
@@ -358,26 +389,32 @@ def draw_offer():
             if not ai_service.should_accept_draw(game['state'], ai_role):
                 game['draw_offered'] = False
                 game['draw_off_by'] = None
+                game_store.save_game(game)
                 return jsonify({
                     'ok': True, 
                     'draw_accepted': False,
-                    'message': 'AI declined the draw offer'
+                    'message': 'AI declined the draw offer',
+                    **_state_payload(game)
                 })
         
-        game['state']['status'] = 'draw_agreed'
+        game['state']['status'] = 'draw_agreement'
+        game['draw_offered'] = False
+        game['draw_off_by'] = None
         game['end_time'] = time.time()
         report_service.export_game_report(game)
         user_model.increment_games(username)
+        game_store.save_game(game)
+        
+        payload = _state_payload(game)
+        sess = session_store.get_session(username)
+        payload['next_game_available'] = bool(sess and sess['current_game'] <= 5)
+        return jsonify({'ok': True, **payload})
     
     elif action == 'decline':
         game['draw_offered'] = False
         game['draw_off_by'] = None
+        game_store.save_game(game)
+        return jsonify({'ok': True, **_state_payload(game)})
     
-    game_store.save_game(game)
-    
-    return jsonify({
-        'ok': True,
-        'draw_offered': game['draw_offered'],
-        'draw_off_by': game['draw_off_by'],
-        'status': game['state']['status']
-    })
+    else:
+        return jsonify({'ok': False, 'error': 'Unknown draw action'}), 400
