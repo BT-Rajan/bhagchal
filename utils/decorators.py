@@ -3,7 +3,7 @@
 from functools import wraps
 from flask import session, jsonify
 
-from baghchal.models.user import user_model
+from models.user import user_model
 
 
 def login_required(f):

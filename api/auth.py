@@ -5,7 +5,7 @@ Handles login, register, logout, password reset.
 """
 from flask import Blueprint, request, jsonify, session
 
-from baghchal.models.user import user_model
+from models.user import user_model
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 

@@ -7,12 +7,12 @@ import copy
 import time
 from flask import Blueprint, request, jsonify, session
 
-from baghchal.models.user import user_model
-from baghchal.models.game import session_store, game_store
-from baghchal.services.engine import GameEngine, format_moves_list, node_label
-from baghchal.services.ai import ai_service
-from baghchal.services.report import report_service
-from baghchal.config import Config
+from models.user import user_model
+from models.game import session_store, game_store
+from services.engine import GameEngine, format_moves_list, node_label
+from services.ai import ai_service
+from services.report import report_service
+from config import Config
 
 game_bp = Blueprint('game', __name__, url_prefix='/api/game')
 

@@ -63,7 +63,7 @@ class GameStore:
     
     def new_game(self, username: str, mode: str, human_role: str, difficulty: str = 'medium') -> str:
         """Create a new game instance."""
-        from baghchal.services.engine import init_state
+        from services.engine import init_state
         
         game_id = str(uuid.uuid4())
         self._games[game_id] = {

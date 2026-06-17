@@ -9,7 +9,7 @@ import time
 from datetime import datetime
 from typing import Dict, Any
 
-from baghchal.config import Config
+from config import Config
 
 
 class ReportService:

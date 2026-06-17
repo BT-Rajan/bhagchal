@@ -1,4 +1,3 @@
-```
 # Python
 __pycache__/
 *.py[cod]
@@ -57,4 +56,6 @@ build/
 *.tmp
 .DS_Store
 Thumbs.db
-```
+
+# Runtime game report exports
+game_reports/

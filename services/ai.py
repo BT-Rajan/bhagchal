@@ -5,10 +5,10 @@ Minimax algorithm with Alpha-Beta pruning for computer opponents.
 """
 import random
 from typing import Dict, Any, Optional
-from baghchal.services.engine import (
+from services.engine import (
     N, ADJ, CENTER_WEIGHTS, GameEngine, board_hash
 )
-from baghchal.config import Config
+from config import Config
 
 
 class AIService:
