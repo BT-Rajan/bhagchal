@@ -55,21 +55,38 @@
 <div class="game-screen" id="game-screen" style="display:none">
   <div class="game-layout">
 
-    <!-- Tiger panel -->
-    <div class="panel">
-      <div class="panel-title">
-        Tigers
-        <span style="font-size:10px;color:var(--text-dim)" id="game-number">Game 1/5</span>
+    <!-- Left sidebar: Tiger + Goat panels stacked -->
+    <div class="left-sidebar">
+
+      <!-- Tiger panel -->
+      <div class="panel">
+        <div class="panel-title">
+          Tigers
+          <span style="font-size:10px;color:var(--text-dim)" id="game-number">Game 1/5</span>
+        </div>
+        <div class="faction-label tiger">🐯 Tigers</div>
+        <div id="tiger-turn-ind" class="turn-ind inactive">Waiting</div>
+        <div class="stat-row"><span class="stat-key">Goal</span><span class="stat-val">Capture 5</span></div>
+        <div class="stat-row"><span class="stat-key">Captured</span><span class="stat-val" id="captured-count">0</span></div>
+        <div class="capture-meter">
+          <div class="cap-pip"></div><div class="cap-pip"></div><div class="cap-pip"></div>
+          <div class="cap-pip"></div><div class="cap-pip"></div>
+        </div>
+        <div class="stat-row"><span class="stat-key">Moves</span><span class="stat-val" id="tiger-moves">0</span></div>
       </div>
-      <div class="faction-label tiger">🐯 Tigers</div>
-      <div id="tiger-turn-ind" class="turn-ind inactive">Waiting</div>
-      <div class="stat-row"><span class="stat-key">Goal</span><span class="stat-val">Capture 5</span></div>
-      <div class="stat-row"><span class="stat-key">Captured</span><span class="stat-val" id="captured-count">0</span></div>
-      <div class="capture-meter">
-        <div class="cap-pip"></div><div class="cap-pip"></div><div class="cap-pip"></div>
-        <div class="cap-pip"></div><div class="cap-pip"></div>
+
+      <!-- Goat panel -->
+      <div class="panel">
+        <div class="panel-title">Goats</div>
+        <div class="faction-label goat">🐐 Goats</div>
+        <div id="goat-turn-ind" class="turn-ind inactive">Waiting</div>
+        <div class="stat-row"><span class="stat-key">Placed</span><span class="stat-val" id="placed-count">0 / 20</span></div>
+        <div class="stat-row"><span class="stat-key">Reserve</span><span class="stat-val" id="reserve-count">20</span></div>
+        <div class="phase-badge"><div class="phase-dot"></div><span id="phase-label">Phase 1: Placement</span></div>
+        <div class="goat-reserve" id="goat-reserve"></div>
+        <div class="stat-row"><span class="stat-key">Moves</span><span class="stat-val" id="goat-moves">0</span></div>
       </div>
-      <div class="stat-row"><span class="stat-key">Moves</span><span class="stat-val" id="tiger-moves">0</span></div>
+
     </div>
 
     <!-- Board -->
@@ -92,6 +109,7 @@
       </div>
     </div>
 
+
     <!-- Draw banner (hotseat) -->
     <div class="draw-banner" id="draw-banner">
       <span id="draw-banner-msg">Draw has been offered.</span>
@@ -99,21 +117,8 @@
       <button class="decline" onclick="doDeclineDraw()">Decline</button>
     </div>
 
-    <!-- Goat panel -->
-    <div class="panel">
-      <div class="panel-title">Goats</div>
-      <div class="faction-label goat">🐐 Goats</div>
-      <div id="goat-turn-ind" class="turn-ind inactive">Waiting</div>
-      <div class="stat-row"><span class="stat-key">Placed</span><span class="stat-val" id="placed-count">0 / 20</span></div>
-      <div class="stat-row"><span class="stat-key">Reserve</span><span class="stat-val" id="reserve-count">20</span></div>
-      <div class="phase-badge"><div class="phase-dot"></div><span id="phase-label">Phase 1: Placement</span></div>
-      <div class="goat-reserve" id="goat-reserve"></div>
-      <div class="stat-row"><span class="stat-key">Moves</span><span class="stat-val" id="goat-moves">0</span></div>
-    </div>
-
     <!-- Status bar -->
     <div class="status-bar" id="status-bar">Select your move.</div>
-    <div></div><!-- grid spacer -->
 
     <!-- Legend -->
     <div class="legend">

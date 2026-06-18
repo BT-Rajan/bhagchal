@@ -100,6 +100,7 @@ button.link-btn:hover{color:var(--gold)}
 /* ── Game layout ── */
 .game-screen{width:100%;max-width:900px}
 .game-layout{display:grid;grid-template-columns:155px 1fr 200px;gap:14px;align-items:start}
+.left-sidebar{display:flex;flex-direction:column;gap:14px}
 
 /* Faction panels */
 .faction-label{font-size:13px;font-weight:600;letter-spacing:.05em}
