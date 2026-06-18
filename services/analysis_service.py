@@ -79,10 +79,14 @@ def summarize_player_stats(report):
     captures_taken = human_captures
     capture_conversion_rate = round(captures_taken / capture_opportunities * 100, 1) if capture_opportunities > 0 else 0
 
-    # Outcome
+    # Outcome — account for wins, resigns, and draws
     result = report.get('status')
-    human_won = (human_role == 'tiger' and result == 'tiger_win') or (human_role == 'goat' and result == 'goat_win')
-    ai_won = not human_won and result not in ('draw_agreement', 'draw_no_moves', 'draw_repetition')
+    _TIGER_WINS = {'tiger_win', 'goat_resigned'}
+    _GOAT_WINS  = {'goat_win', 'tiger_resigned'}
+    _DRAWS      = {'draw_agreement', 'draw_no_moves', 'draw_repetition'}
+    human_won = (human_role == 'tiger' and result in _TIGER_WINS) or \
+                (human_role == 'goat'  and result in _GOAT_WINS)
+    ai_won = not human_won and result not in _DRAWS
 
     stats = {
         "human_role": human_role,

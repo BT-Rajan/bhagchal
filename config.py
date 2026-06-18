@@ -13,23 +13,30 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'baghchal-server-secret-change-in-production'
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
-    
-    # Game settings
+
+    # Game session settings
     MAX_SESSION_GAMES = 5
-    DEFAULT_DIFFICULTIES = ['easy', 'medium', 'medium', 'medium', 'medium']
-    DEFAULT_ROLES = ['tiger', 'goat', 'tiger', 'goat', 'tiger']
-    
+
+    # Maps game number (1-5) → (human_role, difficulty)
+    SESSION_GAME_PARAMS = {
+        1: ('tiger', 'easy'),
+        2: ('goat',  'easy'),
+        3: ('tiger', 'medium'),
+        4: ('goat',  'medium'),
+        5: ('tiger', 'hard'),
+    }
+
     # Time limits (in seconds) for timed games
     TIMED_GAME_NUMBER = 5
     TIMED_GAME_LIMIT = 7 * 60  # 7 minutes
-    
+
     # AI difficulty depth mapping
     AI_DEPTH_MAP = {
-        'easy': 1,
+        'easy':   1,
         'medium': 3,
-        'hard': 4
+        'hard':   4,
     }
-    
+
     # Report settings
     REPORTS_DIR = 'game_reports'
 
@@ -41,9 +48,6 @@ class Config:
     DEEPSEEK_MAX_TOKENS = int(os.environ.get('DEEPSEEK_MAX_TOKENS', '1800'))
 
     COGZI_MODEL_NAME = os.environ.get('COGZI_MODEL_NAME', 'Cogzi Behavioral Intelligence Model Version 1.0')
-    # Identifier of the job description candidates are being assessed against.
-    # No job-description content store exists yet -- this is just an ID label
-    # threaded through the prompt/report until a real JD repository is built.
     JOB_DESCRIPTION_ID = os.environ.get('JOB_DESCRIPTION_ID', 'JD-GENERIC-001')
 
     # Mail delivery for the analyzed report.
@@ -68,12 +72,12 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     """Production configuration."""
     DEBUG = False
-    # In production, use a real database and proper password hashing
-    # SECRET_KEY should be set via environment variable
+    # In production, use a real database and proper password hashing.
+    # SECRET_KEY must be set via environment variable.
 
 
 config = {
     'development': DevelopmentConfig,
-    'production': ProductionConfig,
-    'default': DevelopmentConfig
+    'production':  ProductionConfig,
+    'default':     DevelopmentConfig,
 }
