@@ -531,6 +531,7 @@ function applyServerState(d) {
   Board.draw();
   if (d.status !== 'active') {
     stopTimer();
+    showResult(d.status);
   } else {
     postMoveStatus();
   }
