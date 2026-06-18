@@ -729,7 +729,7 @@ window.goToLobby = function() {
   // Hide next game button
   const ng = $id('next-game-btn');
   if (ng) { ng.style.display = 'none'; ng.disabled = true; }
-  window.location.href = '/';
+  window.location.replace('/?t=' + Date.now());
 };
 
 /* ── Init ── */

@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Baghchal — Sign In</title>
 <link href="https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Sanskrit&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/main.css">
@@ -75,7 +78,7 @@ async function post(url,body){
 async function doLogin(){
   const d=await post('/api/auth/login',{username:document.getElementById('li-user').value.trim(),password:document.getElementById('li-pass').value});
   document.getElementById('li-err').textContent=d.ok?'':d.error;
-  if(d.ok) window.location.href='/';
+  if(d.ok) window.location.replace('/?t=' + Date.now());
 }
 async function doRegister(){
   const p=document.getElementById('reg-pass').value, p2=document.getElementById('reg-pass2').value;
@@ -83,7 +86,7 @@ async function doRegister(){
   if(p!==p2){e.textContent='Passwords do not match.';return;}
   const d=await post('/api/auth/register',{username:document.getElementById('reg-user').value.trim(),password:p,email:document.getElementById('reg-email').value.trim()});
   e.textContent=d.ok?'':d.error;
-  if(d.ok) window.location.href='/';
+  if(d.ok) window.location.replace('/?t=' + Date.now());
 }
 async function doForgot(){
   const u=document.getElementById('fp-user').value.trim();
