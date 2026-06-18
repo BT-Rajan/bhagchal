@@ -33,6 +33,15 @@ def create_app(config_name='default'):
     app.register_blueprint(auth_bp)
     app.register_blueprint(game_bp)
 
+    # ── No-cache on all responses (prevents stale login/game screens) ─────
+
+    @app.after_request
+    def no_cache(response):
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return response
+
     # ── Page routes ───────────────────────────────────────────────────────
 
     @app.route('/')

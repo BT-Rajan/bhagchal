@@ -529,7 +529,16 @@ function applyServerState(d) {
   updateUI(d);
   rebuildLog(d.move_log || []);
   Board.draw();
-  postMoveStatus();
+  if (d.status !== 'active') {
+    stopTimer();
+  } else {
+    postMoveStatus();
+  }
+  const drawBtn = $id('draw-btn');
+  if (drawBtn && !d.draw_offered) {
+    drawBtn.disabled = false;
+    drawBtn.textContent = 'Offer Draw';
+  }
   if (d.next_game_available) {
     const btn = $id('next-game-btn');
     if (btn) { btn.style.display = 'inline-block'; btn.disabled = false; }
@@ -568,16 +577,24 @@ window.doResign = async function() {
 
 window.doOfferDraw = async function() {
   if (!_gameId || _locked) return;
+  _locked = true;
+  const btn = $id('draw-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Waiting…'; }
   try {
     const d = await post('/api/game/draw', { game_id: _gameId, action: 'offer' });
     applyServerState(d);
-    if (d.ai_response) {
-      setStatus(d.ai_response === 'accepted' ? 'Computer accepted the draw.' : 'Computer declined the draw offer.',
-        d.ai_response === 'accepted' ? 'ok' : 'warn');
+    if (d.ai_response === 'accepted') {
+      setStatus('Computer accepted the draw.', 'ok');
+      if (d.status !== 'active') showResult(d.status);
+    } else if (d.ai_response === 'declined') {
+      setStatus('Computer declined the draw offer.', 'warn');
+      if (btn) { btn.disabled = false; btn.textContent = 'Offer Draw'; }
     }
   } catch (e) {
     setStatus('Error: ' + e.message, 'err');
-    alert('Draw offer error: ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = 'Offer Draw'; }
+  } finally {
+    _locked = false;
   }
 };
 
