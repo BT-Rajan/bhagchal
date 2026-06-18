@@ -33,9 +33,18 @@ class Config:
     # Report settings
     REPORTS_DIR = 'game_reports'
 
-    # DeepSeek-powered post-game personality analysis
+    # DeepSeek-powered post-game personality analysis.
+    # End users never see "DeepSeek" anywhere -- all user-facing output is
+    # branded as COGZI_MODEL_NAME (see services/analysis_service.py).
     DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY')
     DEEPSEEK_API_URL = os.environ.get('DEEPSEEK_API_URL', 'https://api.deepseek.com/v1/chat/completions')
+    DEEPSEEK_MAX_TOKENS = int(os.environ.get('DEEPSEEK_MAX_TOKENS', '1800'))
+
+    COGZI_MODEL_NAME = os.environ.get('COGZI_MODEL_NAME', 'Cogzi Behavioral Intelligence Model Version 1.0')
+    # Identifier of the job description candidates are being assessed against.
+    # No job-description content store exists yet -- this is just an ID label
+    # threaded through the prompt/report until a real JD repository is built.
+    JOB_DESCRIPTION_ID = os.environ.get('JOB_DESCRIPTION_ID', 'JD-GENERIC-001')
 
     # Mail delivery for the analyzed report.
     # MAIL_MODE='development' (default) writes a .log file under MAIL_DIR

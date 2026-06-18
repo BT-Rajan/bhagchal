@@ -1,19 +1,23 @@
 """
-Mail delivery for post-game reports.
+Mail delivery for post-game Cogzi behavioral reports.
 
 Behavior is controlled by Config.MAIL_MODE:
-- 'development' (default): nothing is actually sent. A plain-text file
-  describing the email (To/From/Subject/Body) is written under
-  Config.MAIL_DIR, named after the report file, so you can inspect what
-  would have been sent without configuring real SMTP credentials.
-- 'production': sends a real email via SMTP using Config.SMTP_* settings.
+- 'development' (default): nothing is actually sent. A plain-text .log
+  file describing the email (To/From/Subject/Body) is written under
+  Config.MAIL_DIR, and the generated PDF is copied alongside it, so you
+  can inspect exactly what would have been sent without configuring real
+  SMTP credentials.
+- 'production': sends a real email via SMTP using Config.SMTP_* settings,
+  with the PDF attached.
 
 All settings are read from environment variables (see .env / README).
 """
 import os
+import shutil
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
 
 from config import Config
 
@@ -52,35 +56,29 @@ def _recipients(report):
     return deduped
 
 
-def _build_body(report, analysis_text):
-    final = report.get('final_state', {})
-    lines = [
-        f"Game report for: {report.get('username')}",
-        f"Result: {report.get('status')}",
-        f"Role played: {report.get('human_role')}  |  Mode: {report.get('mode')}  |  Difficulty: {report.get('difficulty')}",
-        f"Total moves: {report.get('total_moves')}  |  Duration: {report.get('duration_seconds')}s",
-        f"Goats captured: {final.get('goats_captured')}  |  Goats placed: {final.get('goats_placed')}",
-        "",
-        "=" * 60,
-        "PLAYER PERSONALITY ANALYSIS",
-        "=" * 60,
-        analysis_text or "(analysis unavailable)",
-    ]
-    return "\n".join(lines)
+def _build_body(report):
+    return (
+        f"Hi {report.get('username', '')},\n\n"
+        f"Your {Config.COGZI_MODEL_NAME} behavioral assessment for game "
+        f"{report.get('game_id', '')} is attached as a PDF.\n\n"
+        f"Result: {report.get('status', '-')}\n"
+        f"This assessment is based on limited samples; ask your administrator "
+        f"for more samples to get more precise results.\n"
+    )
 
 
-def send_report_email(report, analysis_text, report_path):
+def send_report_email(report, profile, pdf_path):
     """
-    Send (or, in development, mock-send) the analyzed report by email.
-    Never raises in development mode; raises MailError on failure in
+    Send (or, in development, mock-send) the Cogzi behavioral report PDF by
+    email. Never raises in development mode; raises MailError on failure in
     production mode so the caller can log it.
     """
-    subject = f"Bagh Chal Report - {report.get('username', 'unknown')} - {report.get('status', 'finished')}"
-    body = _build_body(report, analysis_text)
+    subject = f"{Config.COGZI_MODEL_NAME} Report - {report.get('username', 'unknown')} - {report.get('status', 'finished')}"
+    body = _build_body(report)
     recipients = _recipients(report)
 
     if Config.MAIL_MODE != 'production':
-        _write_dev_mail_log(report_path, subject, recipients, body)
+        _write_dev_mail_log(pdf_path, subject, recipients, body)
         return
 
     if not recipients:
@@ -94,6 +92,14 @@ def send_report_email(report, analysis_text, report_path):
     msg['Subject'] = subject
     msg.attach(MIMEText(body, 'plain'))
 
+    if pdf_path and os.path.exists(pdf_path):
+        with open(pdf_path, 'rb') as f:
+            attachment = MIMEApplication(f.read(), _subtype='pdf')
+        attachment.add_header(
+            'Content-Disposition', 'attachment', filename=os.path.basename(pdf_path)
+        )
+        msg.attach(attachment)
+
     try:
         with smtplib.SMTP(Config.SMTP_HOST, Config.SMTP_PORT, timeout=20) as server:
             if Config.SMTP_USE_TLS:
@@ -105,21 +111,27 @@ def send_report_email(report, analysis_text, report_path):
         raise MailError(f"Failed to send report email: {e}") from e
 
 
-def _write_dev_mail_log(report_path, subject, recipients, body):
-    """Write a .log file describing the 'sent' email, named after the report."""
+def _write_dev_mail_log(pdf_path, subject, recipients, body):
+    """Write a .log describing the 'sent' email and copy the PDF alongside it."""
     if not os.path.exists(Config.MAIL_DIR):
         os.makedirs(Config.MAIL_DIR)
 
-    base = os.path.splitext(os.path.basename(report_path))[0]
+    base = os.path.splitext(os.path.basename(pdf_path))[0] if pdf_path else 'report'
     log_path = os.path.join(Config.MAIL_DIR, f"{base}.log")
 
+    attachment_name = os.path.basename(pdf_path) if pdf_path else '(none)'
     content = (
         f"To: {', '.join(recipients) if recipients else '(no recipient resolved)'}\n"
         f"From: {Config.MAIL_FROM}\n"
         f"Subject: {subject}\n"
+        f"Attachment: {attachment_name}\n"
         f"{'-' * 60}\n"
         f"{body}\n"
     )
     with open(log_path, 'w', encoding='utf-8') as f:
         f.write(content)
+
+    if pdf_path and os.path.exists(pdf_path):
+        shutil.copy(pdf_path, os.path.join(Config.MAIL_DIR, os.path.basename(pdf_path)))
+
     return log_path

@@ -105,22 +105,31 @@ class ReportService:
     
     @staticmethod
     def _analyze_and_send(report: Dict[str, Any], filepath: str) -> None:
-        """Run the analysis pipeline and email/log the result. Never raises."""
+        """Run the analysis pipeline, build the PDF, and email/log it. Never raises."""
         from services.analysis_service import analyze_report, AnalysisError
+        from services.report_pdf import generate_pdf_report
         from services.mailer import send_report_email, MailError
         
         try:
-            analysis_text = analyze_report(report)
+            profile = analyze_report(report)
         except AnalysisError as e:
-            print(f"[report] Skipping email for {filepath}: {e}")
+            print(f"[report] Skipping report for {filepath}: {e}")
             return
         except Exception:
             print(f"[report] Unexpected error analyzing {filepath}:")
             traceback.print_exc()
             return
         
+        pdf_path = filepath.replace('.json', '_analysis.pdf')
         try:
-            send_report_email(report, analysis_text, filepath)
+            generate_pdf_report(report, profile, pdf_path)
+        except Exception:
+            print(f"[report] Unexpected error building PDF for {filepath}:")
+            traceback.print_exc()
+            return
+        
+        try:
+            send_report_email(report, profile, pdf_path)
         except MailError as e:
             print(f"[report] Failed to deliver report email for {filepath}: {e}")
         except Exception:

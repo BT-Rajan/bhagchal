@@ -145,23 +145,44 @@ Each user gets a 5-game session with progressive difficulty:
 - **Password Hashing**: Uses SHA-256 (upgrade to bcrypt/argon2 for production)
 - **Server-Authoritative**: All game logic runs server-side; browser only renders
 
-## Optional: Automatic Personality Analysis + Email
+## Optional: Automatic Behavioral Analysis + Email (PDF)
 
-As soon as a game ends (win, loss, draw, or resign) and its report JSON is written to `game_reports/`, the server automatically runs it through the DeepSeek API in a background thread and emails the resulting personality profile to the player — without blocking the game-ending request. If a game had no human moves, or the API key/network call fails, this is skipped/logged quietly and never affects gameplay.
+As soon as a game ends (win, loss, draw, or resign) and its report JSON is written to `game_reports/`, the server automatically runs it through an LLM in a background thread, builds a formatted PDF, and emails it to the player — without blocking the game-ending request. If a game had no human moves, or the underlying call/response fails, this is skipped/logged quietly and never affects gameplay.
+
+The output is always branded as **Cogzi Behavioral Intelligence Model Version 1.0** — no end-user-facing text (report, email, error messages) ever mentions the underlying LLM provider. The model is explicitly instructed to never break character and to respond with structured JSON (not free-form prose), which is what fixed the earlier issue of reports getting cut off mid-sentence: a malformed/incomplete JSON response fails cleanly and is skipped, rather than rendering as truncated text.
+
+The PDF (`<report>_analysis.pdf`, next to the report JSON) opens with:
+> Based on the game `<game_id>` played on `<date & time>`, evidenced through `<game_id>.json`, the following report is generated using Cogzi Behavioral Intelligence Model Version 1.0.
+
+followed by:
+> The model has observed the following traits in `<username>`: ... These traits align with the expectations set by `<Job_Description_id>` as per Cogzi Behavioral Intelligence Model Version 1.0. The match is `<%>`. This is based on limited samples; ask Admin for more samples to get more precise results.
+
+then sections for decision-making style, strengths, weaknesses, temperament, adaptability, and an overall assessment.
 
 Configure it via `.env` in the repo root:
 
 ```bash
-# Required for analysis to run at all
+# Required for analysis to run at all (this is a DeepSeek key under the hood,
+# but nothing in the output ever surfaces that to end users)
 DEEPSEEK_API_KEY=your_key_here
+
+# Optional overrides
+COGZI_MODEL_NAME=Cogzi Behavioral Intelligence Model Version 1.0
+JOB_DESCRIPTION_ID=JD-GENERIC-001   # no JD content store exists yet -- this
+                                     # is just a label threaded into the
+                                     # prompt/report until a real job
+                                     # description repository is built
+DEEPSEEK_MAX_TOKENS=1800
 
 # MAIL_MODE=development (default): nothing is actually emailed. Instead, a
 # mail/<report-name>.log file is written showing exactly what would have
-# been sent (To/From/Subject/Body) -- handy for local testing.
+# been sent (To/From/Subject/Body), and the generated PDF is copied into
+# mail/ too -- handy for local testing.
 MAIL_MODE=development
 
-# MAIL_MODE=production: sends a real email via SMTP using the settings below.
-# Recipient is the player's registered email, plus anyone in MAIL_TO.
+# MAIL_MODE=production: sends a real email via SMTP using the settings below,
+# with the PDF attached. Recipient is the player's registered email, plus
+# anyone in MAIL_TO.
 # MAIL_MODE=production
 # SMTP_HOST=smtp.example.com
 # SMTP_PORT=587
@@ -178,7 +199,9 @@ You can also still run it manually on any existing report (useful for backfillin
 python3 analyze.py game_reports/<report-file>.json
 ```
 
-This prints the analysis and saves it to `game_reports/<report-file>_analysis.txt`.
+This prints a short summary and saves the full PDF to `game_reports/<report-file>_analysis.pdf`.
+
+**Note on the match percentage**: there's currently no real job-description content store behind `JOB_DESCRIPTION_ID` — it's just an identifier threaded through the prompt, and the match score is the model's own heuristic estimate from gameplay behavior, not a validated psychometric measurement against real job criteria. Treat it as indicative, consistent with the "based on limited samples" disclaimer baked into every report.
 
 ## License
 

@@ -10,6 +10,7 @@ from .engine import (
 from .ai import AIService
 from .report import ReportService
 from .analysis_service import analyze_report, AnalysisError
+from .report_pdf import generate_pdf_report
 from .mailer import send_report_email, MailError
 
 __all__ = [
@@ -22,6 +23,7 @@ __all__ = [
     'ReportService',
     'analyze_report',
     'AnalysisError',
+    'generate_pdf_report',
     'send_report_email',
     'MailError'
 ]

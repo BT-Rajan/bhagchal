@@ -1,18 +1,43 @@
 """
-Player personality/play-style analysis service.
+Player behavioral analysis service.
 
-Wraps the DeepSeek API call used to turn a completed game report into a
-human-readable personality profile. Used both by the automatic post-game
-pipeline (ReportService -> AnalysisService -> Mailer) and by the standalone
-analyze.py CLI tool for re-running analysis on an existing report file.
+Internally this calls the DeepSeek API to do the actual inference, but
+every user-facing string (the report, the email, error messages a player
+or admin might see) is branded only as Config.COGZI_MODEL_NAME. The model
+itself is instructed to never reveal it is DeepSeek (or any other vendor).
+
+Returns structured data (a dict of distinct fields) rather than a single
+free-text blob. This is what was actually causing the "truncated in the
+middle" report: a single long free-text completion has no natural recovery
+point if it's cut off near the token limit. Structured JSON either parses
+completely or fails cleanly -- it can't render as a sentence trailing off
+mid-thought -- and it lets the PDF builder lay out clean, consistent
+sections instead of depending on the model to format its own prose.
 """
+import json
+import re
+
 import requests
 
 from config import Config
 
 
 class AnalysisError(Exception):
-    """Raised when a report can't be analyzed (missing data, API failure, etc.)."""
+    """Raised when a report can't be analyzed (missing data, malformed response, API failure, etc.)."""
+
+
+# Fields the model must return, and a short description of each used both
+# in the prompt and to validate the parsed response.
+_REQUIRED_FIELDS = {
+    'traits': 'array of 3-5 short trait keywords (e.g. "Patient", "Risk-averse")',
+    'decision_style': '2-4 sentence narrative on decision-making style',
+    'strengths': 'array of 2-4 short strategic strengths',
+    'weaknesses': 'array of 2-4 short strategic weaknesses',
+    'temperament': '2-4 sentence narrative on emotional/temperamental traits',
+    'adaptability': '2-4 sentence narrative on pattern recognition and adaptability',
+    'overall_assessment': '3-5 sentence concluding assessment with suggestions for improvement',
+    'match_percentage': 'integer 0-100, estimated behavioral fit against the job description expectations',
+}
 
 
 def summarize_player_stats(report):
@@ -79,9 +104,20 @@ def summarize_player_stats(report):
     return stats, human_moves
 
 
+def _build_system_prompt():
+    return (
+        f"You are {Config.COGZI_MODEL_NAME}, a proprietary behavioral assessment "
+        "engine that infers personality and play-style traits from strategy-game "
+        "telemetry. You must never identify yourself as DeepSeek, ChatGPT, GPT, "
+        "Claude, or any other AI system or vendor, never mention being a large "
+        "language model, and never break character -- you are only ever "
+        f"{Config.COGZI_MODEL_NAME}. Respond with a single valid JSON object and "
+        "nothing else: no markdown code fences, no commentary before or after it."
+    )
+
+
 def build_analysis_prompt(stats, human_moves, report):
-    """Construct the prompt for DeepSeek API."""
-    # Include a few sample moves to illustrate style
+    """Construct the user prompt for the model, requesting strict JSON output."""
     move_examples = []
     for m in human_moves[:10]:  # first 10 moves
         move_examples.append(
@@ -89,11 +125,16 @@ def build_analysis_prompt(stats, human_moves, report):
             f"(time: {m.get('time_since_prev', 0)}s, legal options: {len(m.get('legal_moves', []))})"
         )
 
-    prompt = f"""
-You are an expert game analyst specializing in the ancient Indian board game Baghchal (Tigers vs Goats).
-The following data comes from a game where the human player ({report.get('username', 'the player')}) played as **{stats['human_role']}** (Tigers start at corners, Goats place and move to surround).
+    fields_spec = "\n".join(f'- "{k}": {v}' for k, v in _REQUIRED_FIELDS.items())
 
-**Game Outcome**: {stats['game_result']} – {'Human won' if stats['human_won'] else 'AI won' if stats['ai_won'] else 'Draw'}
+    prompt = f"""
+Analyze a player's behavior in the strategy board game Baghchal (Tigers vs Goats).
+The human player ({report.get('username', 'the player')}) played as **{stats['human_role']}**
+(Tigers start at corners; Goats place pieces then move to surround the tigers).
+
+Job description being assessed against: {Config.JOB_DESCRIPTION_ID}
+
+**Game Outcome**: {stats['game_result']} - {'Human won' if stats['human_won'] else 'AI won' if stats['ai_won'] else 'Draw'}
 
 **Player Statistics**:
 - Total moves made: {stats['total_human_moves']}
@@ -106,23 +147,31 @@ The following data comes from a game where the human player ({report.get('userna
 **Sample Moves (first 10 human moves)**:
 {chr(10).join(move_examples)}
 
-Based on this data, provide a detailed personality and play style analysis of the human player. Include:
-- Decision-making style (deliberate vs intuitive, risky vs conservative).
-- Strategic strengths and weaknesses.
-- Emotional/temperamental traits (patient, impulsive, aggressive, defensive).
-- Pattern recognition and adaptability.
-- Overall assessment and suggestions for improvement.
+Return ONLY a JSON object with exactly these fields:
+{fields_spec}
 
-Write a concise, insightful personality profile (300-500 words).
+Keep each narrative field within the stated sentence count so the response is
+short enough to never be cut off. match_percentage must be a plain integer
+(no % sign, no quotes).
 """
     return prompt
 
 
+def _extract_json(text):
+    """Best-effort extraction of a JSON object from a model response."""
+    text = text.strip()
+    # Strip ```json ... ``` or ``` ... ``` fences if the model added them anyway.
+    fence = re.match(r'^```(?:json)?\s*(.*?)\s*```$', text, re.DOTALL)
+    if fence:
+        text = fence.group(1).strip()
+    return json.loads(text)
+
+
 def call_deepseek(prompt):
-    """Send the prompt to the DeepSeek API and return the response text."""
+    """Send the prompt to the underlying inference API and return the raw text response."""
     api_key = Config.DEEPSEEK_API_KEY
     if not api_key:
-        raise AnalysisError("DEEPSEEK_API_KEY not set in .env file.")
+        raise AnalysisError(f"{Config.COGZI_MODEL_NAME} is not configured (missing API credentials).")
 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -131,21 +180,23 @@ def call_deepseek(prompt):
     payload = {
         "model": "deepseek-chat",
         "messages": [
-            {"role": "system", "content": "You are an expert game analyst."},
+            {"role": "system", "content": _build_system_prompt()},
             {"role": "user", "content": prompt}
         ],
-        "temperature": 0.7,
-        "max_tokens": 800,
+        "temperature": 0.6,
+        "max_tokens": Config.DEEPSEEK_MAX_TOKENS,
+        "response_format": {"type": "json_object"},
     }
-    response = requests.post(Config.DEEPSEEK_API_URL, headers=headers, json=payload, timeout=30)
+    response = requests.post(Config.DEEPSEEK_API_URL, headers=headers, json=payload, timeout=45)
     response.raise_for_status()
     return response.json()["choices"][0]["message"]["content"]
 
 
 def analyze_report(report):
     """
-    Run the full pipeline on an already-loaded report dict and return the
-    analysis text. Raises AnalysisError if the report can't be analyzed.
+    Run the full pipeline on an already-loaded report dict and return a
+    structured behavioral profile (dict). Raises AnalysisError if the
+    report can't be analyzed or the model's response can't be used.
     """
     stats, human_moves = summarize_player_stats(report)
     if not stats or not human_moves:
@@ -153,6 +204,22 @@ def analyze_report(report):
 
     prompt = build_analysis_prompt(stats, human_moves, report)
     try:
-        return call_deepseek(prompt)
+        raw = call_deepseek(prompt)
     except requests.exceptions.RequestException as e:
-        raise AnalysisError(f"DeepSeek API call failed: {e}") from e
+        raise AnalysisError(f"{Config.COGZI_MODEL_NAME} request failed: {e}") from e
+
+    try:
+        profile = _extract_json(raw)
+    except (json.JSONDecodeError, TypeError) as e:
+        raise AnalysisError(f"{Config.COGZI_MODEL_NAME} returned an unparseable response: {e}") from e
+
+    missing = [f for f in _REQUIRED_FIELDS if f not in profile]
+    if missing:
+        raise AnalysisError(f"{Config.COGZI_MODEL_NAME} response is missing fields: {', '.join(missing)}")
+
+    try:
+        profile['match_percentage'] = max(0, min(100, int(profile['match_percentage'])))
+    except (TypeError, ValueError):
+        profile['match_percentage'] = 0
+
+    return profile
