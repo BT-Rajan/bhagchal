@@ -100,7 +100,7 @@ const Board = {
     if (!this._canvas || !this._board) return;
     const ctx = this._ctx;
     ctx.clearRect(0, 0, SIZE, SIZE);
-    ctx.fillStyle = '#070b14';
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--board-bg').trim() || '#070b14';
     ctx.beginPath();
     ctx.roundRect(0, 0, SIZE, SIZE, 10);
     ctx.fill();
@@ -115,7 +115,7 @@ const Board = {
         const [ax, ay] = nodePos(a),
           [bx, by] = nodePos(b);
         const isDiag = Math.floor(a / 5) !== Math.floor(b / 5) && (a % 5) !== (b % 5);
-        ctx.strokeStyle = isDiag ? 'rgba(61,122,237,.18)' : 'rgba(99,140,210,.35)';
+        const cs=getComputedStyle(document.documentElement);ctx.strokeStyle=isDiag?(cs.getPropertyValue('--board-diag').trim()||'rgba(61,122,237,.18)'):(cs.getPropertyValue('--board-line').trim()||'rgba(99,140,210,.35)');
         ctx.lineWidth = 1.2;
         ctx.beginPath();
         ctx.moveTo(ax, ay);
@@ -160,7 +160,7 @@ const Board = {
       const [x, y] = nodePos(i);
       ctx.beginPath();
       ctx.arc(x, y, 2.8, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(99,140,210,.38)';
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--board-dot').trim() || 'rgba(99,140,210,.38)';
       ctx.fill();
     }
 
@@ -218,7 +218,7 @@ const Board = {
     if (isSel) {
       ctx.beginPath();
       ctx.arc(x, y, 16, 0, Math.PI * 2);
-      ctx.strokeStyle = '#5b93f5';
+      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--sel-ring').trim() || '#5289f5';
       ctx.lineWidth = 2;
       ctx.stroke();
     }
@@ -228,9 +228,12 @@ const Board = {
     ctx.fill();
     ctx.beginPath();
     ctx.arc(x, y, 12, 0, Math.PI * 2);
-    ctx.fillStyle = isTiger ? (isSel ? '#f07070' : '#e05252') : (isSel ? '#deeaff' : '#c8d8f0');
+    const _cs=getComputedStyle(document.documentElement);
+    const _tc=_cs.getPropertyValue('--piece-tiger').trim()||'#e05252';
+    const _gc=_cs.getPropertyValue('--piece-goat').trim()||'#c8d8f0';
+    ctx.fillStyle=isTiger?(isSel?_tc+'cc':_tc):(isSel?_gc+'ee':_gc);
     ctx.fill();
-    ctx.strokeStyle = isTiger ? 'rgba(255,140,140,.45)' : 'rgba(160,190,240,.4)';
+    ctx.strokeStyle = isTiger ? 'rgba(255,160,160,.35)' : 'rgba(180,210,255,.3)';
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.font = '13px sans-serif';

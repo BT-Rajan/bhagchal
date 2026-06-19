@@ -6,29 +6,36 @@
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>BEINT — Session</title>
+<title>Cogzi BEINT v1.0 — Session</title>
 <link rel="stylesheet" href="/static/css/main.css">
+<script src="/static/js/theme.js"></script>
 </head>
 <body>
 
-<!-- Top nav -->
 <nav class="topnav">
   <div class="topnav-left">
-    <a class="beint-wordmark" href="/">
-      <div class="beint-logo-mark">
-        <svg viewBox="0 0 18 18"><rect x="2" y="2" width="6" height="6" rx="1"/><rect x="10" y="2" width="6" height="6" rx="1"/><rect x="2" y="10" width="6" height="6" rx="1"/><rect x="10" y="10" width="6" height="6" rx="1"/></svg>
+    <a class="wordmark" href="/">
+      <div class="wm-icon">
+        <svg viewBox="0 0 18 18"><path d="M2 2h5v5H2zM11 2h5v5h-5zM2 11h5v5H2zM11 11h5v5h-5z"/></svg>
       </div>
-      <div>
-        <div class="beint-name">BE<span>INT</span></div>
+      <div class="wm-text">
+        <div class="wm-name">Cogzi <em>BEINT</em></div>
+        <div class="wm-ver">v1.0</div>
       </div>
     </a>
-    <div class="nav-divider"></div>
-    <div class="nav-label">Behavioral Assessment Session</div>
+    <div class="nav-sep"></div>
+    <div class="nav-crumb">Assessment Session</div>
   </div>
   <div class="topnav-right">
-    <div class="nav-label">
-      <strong>{{ user.username }}</strong>
+    <div class="theme-switcher">
+      <button class="theme-btn" data-t="dark"  title="Dark"   onclick="setTheme('dark')"></button>
+      <button class="theme-btn" data-t="light" title="Light"  onclick="setTheme('light')"></button>
+      <button class="theme-btn" data-t="corp1" title="Corp 1" onclick="setTheme('corp1')"></button>
+      <button class="theme-btn" data-t="corp2" title="Corp 2" onclick="setTheme('corp2')"></button>
+      <button class="theme-btn" data-t="corp3" title="Corp 3" onclick="setTheme('corp3')"></button>
     </div>
+    <div class="nav-sep"></div>
+    <div class="nav-user"><strong>{{ user.username }}</strong></div>
     <span class="badge {% if user.role == 'admin' %}badge-admin{% else %}badge-user{% endif %}">{{ user.role }}</span>
     {% if user.role == 'admin' %}
     <a href="/admin"><button class="btn">Console</button></a>
@@ -37,8 +44,8 @@
   </div>
 </nav>
 
-<!-- Insight bar -->
 <div class="page-body">
+
 <div class="insight-bar">
   <div class="ins-icon">i</div>
   <span id="tip-text" style="flex:1"></span>
@@ -49,10 +56,9 @@
   </div>
 </div>
 
-<!-- Session start screen -->
 <div id="role-screen" style="display:flex">
   <div class="session-start">
-    <div class="session-title">Psychometric Assessment — 5-Game Protocol</div>
+    <div class="session-heading">Psychometric Assessment — 5-Game Protocol</div>
     <div class="session-plan">
       <div class="plan-row"><div class="plan-num">1</div><div class="plan-name">Tiger — Calibration</div><span class="plan-tag plan-tag-easy">Easy</span></div>
       <div class="plan-row"><div class="plan-num">2</div><div class="plan-name">Goat — Calibration</div><span class="plan-tag plan-tag-easy">Easy</span></div>
@@ -64,13 +70,10 @@
   </div>
 </div>
 
-<!-- Game screen -->
 <div id="game-screen" style="display:none">
 <div class="game-layout">
 
-  <!-- Left sidebar -->
   <div class="left-sidebar">
-
     <div class="card">
       <div class="card-title">
         Tigers
@@ -97,19 +100,16 @@
       <div class="goat-reserve" id="goat-reserve"></div>
       <div class="stat-row"><span class="stat-key">Moves</span><span class="stat-val" id="goat-moves">0</span></div>
     </div>
-
   </div>
 
-  <!-- Board -->
   <div class="board-wrap">
     <div class="board-meta">
       <span id="session-id">SID —</span>
-      <div id="timer-display" style="display:none">7:00</div>
+      <div id="timer-display">7:00</div>
     </div>
     <canvas id="board" width="380" height="380"></canvas>
   </div>
 
-  <!-- History panel -->
   <div class="history-panel">
     <div class="card-title">
       Move Log
@@ -120,17 +120,14 @@
     </div>
   </div>
 
-  <!-- Draw banner (hotseat) -->
   <div class="draw-banner" id="draw-banner">
     <span id="draw-banner-msg">Draw offered.</span>
     <button class="btn-accept" onclick="doAcceptDraw()">Accept</button>
     <button class="btn-decline" onclick="doDeclineDraw()">Decline</button>
   </div>
 
-  <!-- Status bar -->
   <div class="status-bar" id="status-bar">Initialising…</div>
 
-  <!-- Legend -->
   <div class="legend">
     <div class="legend-item"><div class="leg-dot" style="background:var(--tiger)"></div>Tiger</div>
     <div class="legend-item"><div class="leg-dot" style="background:var(--goat)"></div>Goat</div>
@@ -139,11 +136,10 @@
     <div class="legend-item"><div class="leg-dot" style="background:var(--capture)"></div>Capture</div>
   </div>
 
-  <!-- Action buttons -->
   <div class="btn-row">
-    <button class="btn btn-resign"      id="resign-btn"   onclick="doResign()">Resign</button>
-    <button class="btn btn-ghost-green" id="draw-btn"     onclick="doOfferDraw()">Offer Draw</button>
-    <button class="btn"                 id="undo-btn"     onclick="doUndo()" disabled>Undo</button>
+    <button class="btn btn-resign"      id="resign-btn"    onclick="doResign()">Resign</button>
+    <button class="btn btn-ghost-green" id="draw-btn"      onclick="doOfferDraw()">Offer Draw</button>
+    <button class="btn"                 id="undo-btn"      onclick="doUndo()" disabled>Undo</button>
     <button class="btn btn-gold"        id="next-game-btn" style="display:none" onclick="goToNextGame()">▶ Next Game</button>
     <button class="btn"                 onclick="goToLobby()">End Session</button>
   </div>
@@ -152,7 +148,6 @@
 </div>
 </div>
 
-<!-- Phase II overlay -->
 <div class="overlay" id="phase-overlay">
   <div class="overlay-card">
     <div class="phase-numeral">II</div>
@@ -162,7 +157,6 @@
   </div>
 </div>
 
-<!-- Handover overlay -->
 <div class="overlay" id="handover-overlay">
   <div class="overlay-card">
     <div class="result-icon" id="handover-icon">🐯</div>
@@ -172,7 +166,6 @@
   </div>
 </div>
 
-<!-- Result modal -->
 <div class="overlay" id="win-modal">
   <div class="overlay-card">
     <div class="result-icon" id="modal-icon"></div>

@@ -6,22 +6,24 @@
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>BEINT — Sign In</title>
+<title>Cogzi BEINT v1.0 — Sign In</title>
 <link rel="stylesheet" href="/static/css/main.css">
+<script src="/static/js/theme.js"></script>
 </head>
 <body>
-<div class="auth-wrap">
+<div class="auth-root">
 
-  <div class="auth-header">
-    <div class="beint-wordmark">
-      <div class="beint-logo-mark">
-        <svg viewBox="0 0 18 18"><rect x="2" y="2" width="6" height="6" rx="1"/><rect x="10" y="2" width="6" height="6" rx="1"/><rect x="2" y="10" width="6" height="6" rx="1"/><rect x="10" y="10" width="6" height="6" rx="1"/></svg>
+  <div class="auth-brand">
+    <div class="wordmark" style="justify-content:center">
+      <div class="wm-icon">
+        <svg viewBox="0 0 18 18"><path d="M2 2h5v5H2zM11 2h5v5h-5zM2 11h5v5H2zM11 11h5v5h-5z"/></svg>
       </div>
-      <div>
-        <div class="beint-name">BE<span>INT</span></div>
+      <div class="wm-text">
+        <div class="wm-name">Cogzi <em>BEINT</em></div>
+        <div class="wm-ver">v1.0 · Behavioral Intelligence</div>
       </div>
     </div>
-    <div class="auth-sub" style="margin-top:10px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-dim)">Behavioral Intelligence Platform</div>
+    <div class="auth-tagline">Psychometric Assessment Platform</div>
   </div>
 
   <div class="auth-card">
@@ -36,20 +38,20 @@
       <div class="field"><label>Password</label><input id="li-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
       <div class="msg err" id="li-err"></div>
       <button class="btn btn-primary" onclick="doLogin()">Sign In</button>
-      <div class="auth-hint">Demo access &nbsp;·&nbsp; <strong>admin / admin</strong> &nbsp;·&nbsp; <strong>guest / guest</strong></div>
+      <div class="auth-hint">Demo &nbsp;·&nbsp; <strong>admin / admin</strong> &nbsp;·&nbsp; <strong>guest / guest</strong></div>
     </div>
 
     <div class="auth-form" id="form-register">
       <div class="field"><label>Username</label><input id="reg-user" type="text" placeholder="choose a username"></div>
       <div class="field"><label>Password</label><input id="reg-pass" type="password" placeholder="min 4 characters"></div>
       <div class="field"><label>Confirm Password</label><input id="reg-pass2" type="password" placeholder="repeat password"></div>
-      <div class="field"><label>Email <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label><input id="reg-email" type="email" placeholder="you@company.com"></div>
+      <div class="field"><label>Email <span style="text-transform:none;letter-spacing:0;font-weight:400">(optional)</span></label><input id="reg-email" type="email" placeholder="you@company.com"></div>
       <div class="msg err" id="reg-err"></div>
       <button class="btn btn-primary" onclick="doRegister()">Create Account</button>
     </div>
 
     <div class="auth-form" id="form-forgot">
-      <p style="font-size:12px;color:var(--text-dim);line-height:1.65">Generate a one-time reset token. Token is valid for 5 minutes.</p>
+      <p style="font-size:12px;color:var(--text-dim);line-height:1.65">Enter your username to generate a one-time reset token valid for 5 minutes.</p>
       <div class="field"><label>Username</label><input id="fp-user" type="text" placeholder="your username"></div>
       <div class="msg err" id="fp-err"></div>
       <div class="msg ok"  id="fp-ok"></div>
@@ -64,7 +66,18 @@
     </div>
   </div>
 
-  <div class="auth-footer">© BEINT &nbsp;·&nbsp; Behavioral Assessment Technology</div>
+  <div class="auth-theme-row">
+    Theme &nbsp;
+    <div class="theme-switcher">
+      <button class="theme-btn" data-t="dark"  title="Dark"   onclick="setTheme('dark')"></button>
+      <button class="theme-btn" data-t="light" title="Light"  onclick="setTheme('light')"></button>
+      <button class="theme-btn" data-t="corp1" title="Corp 1 — Obsidian" onclick="setTheme('corp1')"></button>
+      <button class="theme-btn" data-t="corp2" title="Corp 2 — Emerald"  onclick="setTheme('corp2')"></button>
+      <button class="theme-btn" data-t="corp3" title="Corp 3 — Violet"   onclick="setTheme('corp3')"></button>
+    </div>
+  </div>
+
+  <div class="auth-footer">© Cogzi BEINT v1.0 &nbsp;·&nbsp; Behavioral Assessment Technology</div>
 
 </div>
 <script>

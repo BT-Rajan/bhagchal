@@ -6,33 +6,43 @@
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>BEINT — Admin Console</title>
+<title>Cogzi BEINT v1.0 — Admin Console</title>
 <link rel="stylesheet" href="/static/css/main.css">
+<script src="/static/js/theme.js"></script>
 </head>
 <body>
 
 <nav class="topnav">
   <div class="topnav-left">
-    <a class="beint-wordmark" href="/">
-      <div class="beint-logo-mark">
-        <svg viewBox="0 0 18 18"><rect x="2" y="2" width="6" height="6" rx="1"/><rect x="10" y="2" width="6" height="6" rx="1"/><rect x="2" y="10" width="6" height="6" rx="1"/><rect x="10" y="10" width="6" height="6" rx="1"/></svg>
+    <a class="wordmark" href="/">
+      <div class="wm-icon">
+        <svg viewBox="0 0 18 18"><path d="M2 2h5v5H2zM11 2h5v5h-5zM2 11h5v5H2zM11 11h5v5h-5z"/></svg>
       </div>
-      <div>
-        <div class="beint-name">BE<span>INT</span></div>
+      <div class="wm-text">
+        <div class="wm-name">Cogzi <em>BEINT</em></div>
+        <div class="wm-ver">v1.0</div>
       </div>
     </a>
-    <div class="nav-divider"></div>
-    <div class="nav-label">Admin Console</div>
+    <div class="nav-sep"></div>
+    <div class="nav-crumb">Admin Console</div>
   </div>
   <div class="topnav-right">
-    <div class="nav-label"><strong>{{ user.username }}</strong></div>
+    <div class="theme-switcher">
+      <button class="theme-btn" data-t="dark"  title="Dark"   onclick="setTheme('dark')"></button>
+      <button class="theme-btn" data-t="light" title="Light"  onclick="setTheme('light')"></button>
+      <button class="theme-btn" data-t="corp1" title="Corp 1" onclick="setTheme('corp1')"></button>
+      <button class="theme-btn" data-t="corp2" title="Corp 2" onclick="setTheme('corp2')"></button>
+      <button class="theme-btn" data-t="corp3" title="Corp 3" onclick="setTheme('corp3')"></button>
+    </div>
+    <div class="nav-sep"></div>
+    <div class="nav-user"><strong>{{ user.username }}</strong></div>
     <span class="badge badge-admin">admin</span>
     <a href="/"><button class="btn">← Session</button></a>
     <button class="btn btn-danger" onclick="doLogout()">Sign Out</button>
   </div>
 </nav>
 
-<div class="page-body" style="padding-top:24px">
+<div class="page-body" style="padding-top:22px">
 <div class="admin-layout">
 
   <div class="card">
