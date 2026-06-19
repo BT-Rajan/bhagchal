@@ -62,3 +62,6 @@ game_reports/
 
 # Development-mode mock email output
 mail/
+*.db
+*.db-shm
+*.db-wal
