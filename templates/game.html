@@ -23,17 +23,17 @@
         <div class="wm-ver">v1.0</div>
       </div>
     </a>
+    <select class="theme-select" onchange="setTheme(this.value)">
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+      <option value="corp1">Corp 1 — Obsidian</option>
+      <option value="corp2">Corp 2 — Emerald</option>
+      <option value="corp3">Corp 3 — Violet</option>
+    </select>
     <div class="nav-sep"></div>
     <div class="nav-crumb">Assessment Session</div>
   </div>
   <div class="topnav-right">
-    <div class="theme-switcher">
-      <button class="theme-btn" data-t="dark"  title="Dark"   onclick="setTheme('dark')"></button>
-      <button class="theme-btn" data-t="light" title="Light"  onclick="setTheme('light')"></button>
-      <button class="theme-btn" data-t="corp1" title="Corp 1" onclick="setTheme('corp1')"></button>
-      <button class="theme-btn" data-t="corp2" title="Corp 2" onclick="setTheme('corp2')"></button>
-      <button class="theme-btn" data-t="corp3" title="Corp 3" onclick="setTheme('corp3')"></button>
-    </div>
     <div class="nav-sep"></div>
     <div class="nav-user"><strong>{{ user.username }}</strong></div>
     <span class="badge {% if user.role == 'admin' %}badge-admin{% else %}badge-user{% endif %}">{{ user.role }}</span>

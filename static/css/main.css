@@ -251,48 +251,29 @@ body {
 .nav-user { font-size: 12px; color: var(--text-mid); }
 .nav-user strong { color: var(--text); font-weight: 600; }
 
-/* ── Theme switcher ── */
-.theme-switcher {
-  display: flex; align-items: center; gap: 4px;
+/* ── Theme selector dropdown ── */
+.theme-select {
   background: var(--surface2);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border2);
   border-radius: 6px;
-  padding: 3px;
+  color: var(--text-mid);
+  font: 500 11px var(--font);
+  letter-spacing: .05em;
+  padding: 5px 28px 5px 10px;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%238899bb' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+  transition: border-color .15s, color .15s;
 }
-.theme-btn {
-  width: 22px; height: 22px; border-radius: 4px;
-  border: 1px solid transparent;
-  cursor: pointer; transition: all .15s;
-  position: relative; overflow: hidden;
-  display: flex; align-items: center; justify-content: center;
+.theme-select:hover, .theme-select:focus {
+  border-color: var(--border3);
+  color: var(--text);
 }
-.theme-btn[data-t="dark"]  { background: #0d1220; }
-.theme-btn[data-t="light"] { background: #f2f4f8; }
-.theme-btn[data-t="corp1"] { background: #141414; }
-.theme-btn[data-t="corp2"] { background: #101a13; }
-.theme-btn[data-t="corp3"] { background: #131024; }
-.theme-btn::after {
-  content: '';
-  position: absolute; inset: 3px;
-  border-radius: 2px;
-}
-.theme-btn[data-t="dark"]::after  { background: #2f6de8; }
-.theme-btn[data-t="light"]::after { background: #2155d4; }
-.theme-btn[data-t="corp1"]::after { background: #c82828; }
-.theme-btn[data-t="corp2"]::after { background: #1e9e56; }
-.theme-btn[data-t="corp3"]::after { background: #7c3fe8; }
-.theme-btn.active, .theme-btn:hover {
-  border-color: var(--accent2);
-}
-.theme-btn[title]:hover::before {
-  content: attr(title);
-  position: absolute; bottom: calc(100% + 6px); left: 50%;
-  transform: translateX(-50%);
-  background: var(--surface3); border: 1px solid var(--border2);
-  color: var(--text); font: 10px var(--font);
-  padding: 3px 7px; border-radius: 4px;
-  white-space: nowrap; pointer-events: none; z-index: 200;
-}
+.theme-select option { background: #141a28; color: #dde5f2; }
 
 /* ═══════════════════════════════════════════════════════════
    Badges
@@ -747,5 +728,4 @@ canvas.blocked { cursor: not-allowed; opacity: .78; }
   .admin-layout  { grid-template-columns: 1fr; }
   .history-panel { max-height: 180px; }
   .topnav        { padding: 0 14px; }
-  .theme-switcher { display: none; }
 }

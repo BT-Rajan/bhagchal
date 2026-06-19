@@ -23,6 +23,7 @@ def login():
         return jsonify({'ok': False, 'error': result}), 400
     
     session['username'] = result['username']
+    import time; session['boot_epoch'] = int(time.time())
     session['role'] = result['role']
     
     return jsonify({
@@ -47,6 +48,7 @@ def register():
     
     # Auto-login
     session['username'] = result['username']
+    import time; session['boot_epoch'] = int(time.time())
     session['role'] = result['role']
     
     return jsonify({

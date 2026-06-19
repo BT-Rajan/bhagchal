@@ -14,8 +14,9 @@ Or:
 """
 
 import os
+import time
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, session
 
 from api import auth_bp, game_bp
 from config import config
@@ -28,6 +29,16 @@ def create_app(config_name='default'):
     """Application factory for BEINT."""
     app = Flask(__name__)
     app.config.from_object(config[config_name])
+
+    # Stamp the epoch this server process started. Any session cookie issued
+    # before this moment is stale and will be cleared, forcing re-login.
+    _boot_epoch = int(time.time())
+
+    @app.before_request
+    def _validate_session():
+        if 'username' in session:
+            if session.get('boot_epoch', 0) < _boot_epoch:
+                session.clear()
 
     from models.db import init_db
     init_db()
