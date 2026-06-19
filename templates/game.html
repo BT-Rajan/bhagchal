@@ -6,180 +6,189 @@
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Baghchal — Session</title>
-<link href="https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Sanskrit&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<title>BEINT — Session</title>
 <link rel="stylesheet" href="/static/css/main.css">
 </head>
 <body>
 
-<div class="header"><h1 class="logo">बाघचाल</h1><p class="sub">Baghchal — Psychometric Session</p></div>
-
-<!-- Navbar -->
-<nav class="navbar">
-  <div class="navbar-left">
-    <span style="font-size:20px">बाघचाल</span>
-    <span class="navbar-user">Logged in as <span>{{ user.username }}</span></span>
-    <span class="role-badge {{ user.role }}">{{ user.role }}</span>
+<!-- Top nav -->
+<nav class="topnav">
+  <div class="topnav-left">
+    <a class="beint-wordmark" href="/">
+      <div class="beint-logo-mark">
+        <svg viewBox="0 0 18 18"><rect x="2" y="2" width="6" height="6" rx="1"/><rect x="10" y="2" width="6" height="6" rx="1"/><rect x="2" y="10" width="6" height="6" rx="1"/><rect x="10" y="10" width="6" height="6" rx="1"/></svg>
+      </div>
+      <div>
+        <div class="beint-name">BE<span>INT</span></div>
+      </div>
+    </a>
+    <div class="nav-divider"></div>
+    <div class="nav-label">Behavioral Assessment Session</div>
   </div>
-  <div class="navbar-right">
+  <div class="topnav-right">
+    <div class="nav-label">
+      <strong>{{ user.username }}</strong>
+    </div>
+    <span class="badge {% if user.role == 'admin' %}badge-admin{% else %}badge-user{% endif %}">{{ user.role }}</span>
     {% if user.role == 'admin' %}
-    <a href="/admin"><button class="btn">Admin Panel</button></a>
+    <a href="/admin"><button class="btn">Console</button></a>
     {% endif %}
-    <form action="/api/auth/logout" method="post" style="display:inline" id="logout-form">
-      <button class="btn danger" type="button" onclick="doLogout()">Sign Out</button>
-    </form>
+    <button class="btn btn-danger" onclick="doLogout()">Sign Out</button>
   </div>
 </nav>
 
-<!-- Tip banner -->
-<div class="tip-banner">
-  <span style="font-size:15px;flex-shrink:0">💡</span>
+<!-- Insight bar -->
+<div class="page-body">
+<div class="insight-bar">
+  <div class="ins-icon">i</div>
   <span id="tip-text" style="flex:1"></span>
-  <div class="tip-nav">
-    <span class="tip-num" id="tip-num"></span>
+  <div class="ins-nav">
+    <span class="ins-count" id="tip-num"></span>
     <button onclick="tipPrev()">‹</button>
     <button onclick="tipNext()">›</button>
   </div>
 </div>
 
-<!-- Role / Mode selection (will be hidden once session starts) -->
-<div class="role-screen" id="role-screen" style="display:flex">
-  <p class="role-prompt">Starting your 5‑game session…</p>
-  <button class="wide-btn gold" id="start-session-btn" onclick="startNextGame()">▶ Start Session</button>
-  <div style="font-size:12px;color:var(--text-dim);margin-top:12px;text-align:center;">
-    Games: <b>1</b> Practice Tiger · <b>2</b> Practice Goat · <b>3</b> Tiger · <b>4</b> Goat · <b>5</b> Timed (7 min)
+<!-- Session start screen -->
+<div id="role-screen" style="display:flex">
+  <div class="session-start">
+    <div class="session-title">Psychometric Assessment — 5-Game Protocol</div>
+    <div class="session-plan">
+      <div class="plan-row"><div class="plan-num">1</div><div class="plan-name">Tiger — Calibration</div><span class="plan-tag plan-tag-easy">Easy</span></div>
+      <div class="plan-row"><div class="plan-num">2</div><div class="plan-name">Goat — Calibration</div><span class="plan-tag plan-tag-easy">Easy</span></div>
+      <div class="plan-row"><div class="plan-num">3</div><div class="plan-name">Tiger — Assessment</div><span class="plan-tag plan-tag-medium">Medium</span></div>
+      <div class="plan-row"><div class="plan-num">4</div><div class="plan-name">Goat — Assessment</div><span class="plan-tag plan-tag-medium">Medium</span></div>
+      <div class="plan-row"><div class="plan-num">5</div><div class="plan-name">Tiger — Stress Protocol</div><span class="plan-tag plan-tag-timed">Timed · 7 min</span></div>
+    </div>
+    <button class="start-btn" id="start-session-btn" onclick="startNextGame()">▶ &nbsp; Begin Assessment</button>
   </div>
 </div>
 
 <!-- Game screen -->
-<div class="game-screen" id="game-screen" style="display:none">
-  <div class="game-layout">
+<div id="game-screen" style="display:none">
+<div class="game-layout">
 
-    <!-- Left sidebar: Tiger + Goat panels stacked -->
-    <div class="left-sidebar">
+  <!-- Left sidebar -->
+  <div class="left-sidebar">
 
-      <!-- Tiger panel -->
-      <div class="panel">
-        <div class="panel-title">
-          Tigers
-          <span style="font-size:10px;color:var(--text-dim)" id="game-number">Game 1/5</span>
-        </div>
-        <div class="faction-label tiger">🐯 Tigers</div>
-        <div id="tiger-turn-ind" class="turn-ind inactive">Waiting</div>
-        <div class="stat-row"><span class="stat-key">Goal</span><span class="stat-val">Capture 5</span></div>
-        <div class="stat-row"><span class="stat-key">Captured</span><span class="stat-val" id="captured-count">0</span></div>
-        <div class="capture-meter">
-          <div class="cap-pip"></div><div class="cap-pip"></div><div class="cap-pip"></div>
-          <div class="cap-pip"></div><div class="cap-pip"></div>
-        </div>
-        <div class="stat-row"><span class="stat-key">Moves</span><span class="stat-val" id="tiger-moves">0</span></div>
+    <div class="card">
+      <div class="card-title">
+        Tigers
+        <span id="game-number" style="font-variant-numeric:tabular-nums">1 / 5</span>
       </div>
-
-      <!-- Goat panel -->
-      <div class="panel">
-        <div class="panel-title">Goats</div>
-        <div class="faction-label goat">🐐 Goats</div>
-        <div id="goat-turn-ind" class="turn-ind inactive">Waiting</div>
-        <div class="stat-row"><span class="stat-key">Placed</span><span class="stat-val" id="placed-count">0 / 20</span></div>
-        <div class="stat-row"><span class="stat-key">Reserve</span><span class="stat-val" id="reserve-count">20</span></div>
-        <div class="phase-badge"><div class="phase-dot"></div><span id="phase-label">Phase 1: Placement</span></div>
-        <div class="goat-reserve" id="goat-reserve"></div>
-        <div class="stat-row"><span class="stat-key">Moves</span><span class="stat-val" id="goat-moves">0</span></div>
+      <div class="faction-name tiger">🐯 &nbsp;Tigers</div>
+      <div id="tiger-turn-ind" class="turn-ind inactive">Standby</div>
+      <div class="stat-row"><span class="stat-key">Objective</span><span class="stat-val">Capture 5</span></div>
+      <div class="stat-row"><span class="stat-key">Captured</span><span class="stat-val" id="captured-count">0</span></div>
+      <div class="capture-meter">
+        <div class="cap-pip"></div><div class="cap-pip"></div><div class="cap-pip"></div>
+        <div class="cap-pip"></div><div class="cap-pip"></div>
       </div>
-
+      <div class="stat-row"><span class="stat-key">Moves</span><span class="stat-val" id="tiger-moves">0</span></div>
     </div>
 
-    <!-- Board -->
-    <div class="board-wrap">
-      <div style="display:flex;justify-content:space-between;width:100%;padding:0 6px">
-        <span id="session-id" style="font-size:10px;color:var(--text-dim)">Session: </span>
-        <div id="timer-display" style="font-size:20px;font-weight:bold;color:var(--gold);display:none;">7:00</div>
-      </div>
-      <canvas id="board" width="380" height="380"></canvas>
-    </div>
-
-    <!-- History panel -->
-    <div class="history-panel">
-      <div class="panel-title">
-        Move History
-        <span class="save-dot" id="save-dot"></span>
-      </div>
-      <div class="history-scroll" id="history-scroll">
-        <div style="font-size:11px;color:var(--text-dim);text-align:center;padding:8px 0">No moves yet.</div>
-      </div>
-    </div>
-
-
-    <!-- Draw banner (hotseat) -->
-    <div class="draw-banner" id="draw-banner">
-      <span id="draw-banner-msg">Draw has been offered.</span>
-      <button onclick="doAcceptDraw()">Accept</button>
-      <button class="decline" onclick="doDeclineDraw()">Decline</button>
-    </div>
-
-    <!-- Status bar -->
-    <div class="status-bar" id="status-bar">Select your move.</div>
-
-    <!-- Legend -->
-    <div class="legend">
-      <div class="legend-item"><div class="leg-dot" style="background:var(--tiger)"></div>Tiger</div>
-      <div class="legend-item"><div class="leg-dot" style="background:var(--goat)"></div>Goat</div>
-      <div class="legend-item"><div class="leg-dot" style="background:#f0c040"></div>Selected</div>
-      <div class="legend-item"><div class="leg-dot" style="background:var(--valid)"></div>Valid</div>
-      <div class="legend-item"><div class="leg-dot" style="background:var(--capture)"></div>Capture</div>
-    </div>
-
-    <!-- Action buttons -->
-    <div class="btn-row">
-      <button class="btn resign" id="resign-btn" onclick="doResign()">Resign</button>
-      <button class="btn green"  id="draw-btn"   onclick="doOfferDraw()">Offer Draw</button>
-      <button class="btn"        id="undo-btn"   onclick="doUndo()" disabled>Undo</button>
-      <button class="btn gold"   id="next-game-btn" style="display:none" onclick="goToNextGame()">▶ Next Game</button>
-      <button class="btn"                        onclick="goToLobby()">Quit Session</button>
+    <div class="card">
+      <div class="card-title">Goats</div>
+      <div class="faction-name goat">🐐 &nbsp;Goats</div>
+      <div id="goat-turn-ind" class="turn-ind inactive">Standby</div>
+      <div class="stat-row"><span class="stat-key">Placed</span><span class="stat-val" id="placed-count">0 / 20</span></div>
+      <div class="stat-row"><span class="stat-key">Reserve</span><span class="stat-val" id="reserve-count">20</span></div>
+      <div class="phase-tag"><div class="phase-dot"></div><span id="phase-label">Phase I — Placement</span></div>
+      <div class="goat-reserve" id="goat-reserve"></div>
+      <div class="stat-row"><span class="stat-key">Moves</span><span class="stat-val" id="goat-moves">0</span></div>
     </div>
 
   </div>
+
+  <!-- Board -->
+  <div class="board-wrap">
+    <div class="board-meta">
+      <span id="session-id">SID —</span>
+      <div id="timer-display" style="display:none">7:00</div>
+    </div>
+    <canvas id="board" width="380" height="380"></canvas>
+  </div>
+
+  <!-- History panel -->
+  <div class="history-panel">
+    <div class="card-title">
+      Move Log
+      <span class="save-dot" id="save-dot"></span>
+    </div>
+    <div class="history-scroll" id="history-scroll">
+      <div style="font-size:11px;color:var(--text-dim);text-align:center;padding:10px 0">No moves recorded.</div>
+    </div>
+  </div>
+
+  <!-- Draw banner (hotseat) -->
+  <div class="draw-banner" id="draw-banner">
+    <span id="draw-banner-msg">Draw offered.</span>
+    <button class="btn-accept" onclick="doAcceptDraw()">Accept</button>
+    <button class="btn-decline" onclick="doDeclineDraw()">Decline</button>
+  </div>
+
+  <!-- Status bar -->
+  <div class="status-bar" id="status-bar">Initialising…</div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="leg-dot" style="background:var(--tiger)"></div>Tiger</div>
+    <div class="legend-item"><div class="leg-dot" style="background:var(--goat)"></div>Goat</div>
+    <div class="legend-item"><div class="leg-dot" style="background:var(--accent2)"></div>Selected</div>
+    <div class="legend-item"><div class="leg-dot" style="background:var(--valid)"></div>Valid</div>
+    <div class="legend-item"><div class="leg-dot" style="background:var(--capture)"></div>Capture</div>
+  </div>
+
+  <!-- Action buttons -->
+  <div class="btn-row">
+    <button class="btn btn-resign"      id="resign-btn"   onclick="doResign()">Resign</button>
+    <button class="btn btn-ghost-green" id="draw-btn"     onclick="doOfferDraw()">Offer Draw</button>
+    <button class="btn"                 id="undo-btn"     onclick="doUndo()" disabled>Undo</button>
+    <button class="btn btn-gold"        id="next-game-btn" style="display:none" onclick="goToNextGame()">▶ Next Game</button>
+    <button class="btn"                 onclick="goToLobby()">End Session</button>
+  </div>
+
+</div>
+</div>
 </div>
 
-<!-- Phase transition overlay -->
+<!-- Phase II overlay -->
 <div class="overlay" id="phase-overlay">
   <div class="overlay-card">
-    <div class="big">II</div>
+    <div class="phase-numeral">II</div>
     <h2>Movement Phase</h2>
-    <p>All 20 goats placed. Both sides may now move pieces along board lines. Goats win by surrounding all tigers.</p>
-    <button class="btn primary" onclick="dismissPhaseOverlay()">Continue →</button>
+    <p>All 20 goats placed. Both factions may now move pieces along board lines. Goats win by immobilising all tigers.</p>
+    <button class="btn btn-primary" onclick="dismissPhaseOverlay()">Continue →</button>
   </div>
 </div>
 
-<!-- Hotseat handover overlay -->
+<!-- Handover overlay -->
 <div class="overlay" id="handover-overlay">
   <div class="overlay-card">
-    <div class="icon" id="handover-icon">🐯</div>
-    <div class="handover-title" id="handover-title">Tiger's Turn</div>
-    <p id="handover-sub">Pass the device.</p>
-    <button class="btn primary" onclick="dismissHandover()">Ready — Tap to Continue</button>
+    <div class="result-icon" id="handover-icon">🐯</div>
+    <div class="handover-faction" id="handover-title">Tiger's Turn</div>
+    <p id="handover-sub">Pass the device to continue.</p>
+    <button class="btn btn-primary" onclick="dismissHandover()">Ready — Continue</button>
   </div>
 </div>
 
-<!-- Win modal -->
+<!-- Result modal -->
 <div class="overlay" id="win-modal">
   <div class="overlay-card">
-    <div class="icon" id="modal-icon"></div>
+    <div class="result-icon" id="modal-icon"></div>
     <h2 id="modal-title"></h2>
-    <p  id="modal-sub" style="color:var(--text-dim)"></p>
+    <p id="modal-sub" style="color:var(--text-dim)"></p>
     <div class="modal-stats" id="modal-stats"></div>
-    <button class="btn primary" onclick="goToLobby()">Play Again</button>
+    <button class="btn btn-primary" onclick="goToLobby()">New Session</button>
   </div>
 </div>
 
 <script src="/static/js/board.js"></script>
 <script src="/static/js/game.js"></script>
 <script>
-console.log('Game.html loaded');
-// Logout function
-async function doLogout() {
-  await fetch('/api/auth/logout', {method:'POST'});
-  window.location.replace('/?t=' + Date.now());
+async function doLogout(){
+  await fetch('/api/auth/logout',{method:'POST'});
+  window.location.replace('/?t='+Date.now());
 }
 </script>
 </body>

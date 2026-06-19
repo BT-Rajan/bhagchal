@@ -1,5 +1,5 @@
 """
-Bagh Chal - Tiger and Goat Board Game
+BEINT — Behavioral Intelligence Platform
 
 A Flask-based server-authoritative implementation of the traditional Nepali board game.
 All game logic, AI, and state management run on the server.
@@ -25,7 +25,7 @@ from utils.decorators import admin_required, current_user
 
 
 def create_app(config_name='default'):
-    """Application factory for Bagh Chal."""
+    """Application factory for BEINT."""
     app = Flask(__name__)
     app.config.from_object(config[config_name])
 

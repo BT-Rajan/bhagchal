@@ -3,70 +3,79 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Baghchal — Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Sanskrit&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>BEINT — Admin Console</title>
 <link rel="stylesheet" href="/static/css/main.css">
 </head>
 <body>
 
-<div class="header"><h1 class="logo">बाघचाल</h1><p class="sub">Admin Panel</p></div>
-
-<nav class="navbar">
-  <div class="navbar-left">
-    <span style="font-size:20px">बाघचाल</span>
-    <span class="navbar-user">Logged in as <span>{{ user.username }}</span></span>
-    <span class="role-badge admin">admin</span>
+<nav class="topnav">
+  <div class="topnav-left">
+    <a class="beint-wordmark" href="/">
+      <div class="beint-logo-mark">
+        <svg viewBox="0 0 18 18"><rect x="2" y="2" width="6" height="6" rx="1"/><rect x="10" y="2" width="6" height="6" rx="1"/><rect x="2" y="10" width="6" height="6" rx="1"/><rect x="10" y="10" width="6" height="6" rx="1"/></svg>
+      </div>
+      <div>
+        <div class="beint-name">BE<span>INT</span></div>
+      </div>
+    </a>
+    <div class="nav-divider"></div>
+    <div class="nav-label">Admin Console</div>
   </div>
-  <div class="navbar-right">
-    <a href="/"><button class="btn">Back to Game</button></a>
-    <button class="btn danger" onclick="doLogout()">Sign Out</button>
+  <div class="topnav-right">
+    <div class="nav-label"><strong>{{ user.username }}</strong></div>
+    <span class="badge badge-admin">admin</span>
+    <a href="/"><button class="btn">← Session</button></a>
+    <button class="btn btn-danger" onclick="doLogout()">Sign Out</button>
   </div>
 </nav>
 
-<div class="admin-grid">
-  <div class="panel">
-    <div class="panel-title">Registered Users</div>
+<div class="page-body" style="padding-top:24px">
+<div class="admin-layout">
+
+  <div class="card">
+    <div class="card-title">Registered Users</div>
     <div id="user-list" style="display:flex;flex-direction:column;gap:6px">
       {% for u in users %}
       <div class="user-row" data-username="{{ u.username }}">
         <div>
-          <b style="font-size:12px">{{ u.username }}</b>
-          <span class="role-badge {{ u.role }}" style="margin-left:6px">{{ u.role }}</span>
-          <div style="font-size:10px;color:var(--text-dim);margin-top:2px">
-            Games: {{ u.games_played }} · Joined: {{ u.created_at }}
-          </div>
+          <span style="font-size:13px;font-weight:600">{{ u.username }}</span>
+          <span class="badge {% if u.role == 'admin' %}badge-admin{% else %}badge-user{% endif %}" style="margin-left:6px">{{ u.role }}</span>
+          <div class="user-info-sub">Games: {{ u.games_played }} &nbsp;·&nbsp; Joined: {{ u.created_at }}</div>
         </div>
         {% if u.role != 'admin' %}
-        <button class="btn danger" style="font-size:10px;padding:4px 10px" onclick="deleteUser('{{ u.username }}')">Delete</button>
+        <button class="btn btn-danger" style="font-size:10px;padding:4px 10px" onclick="deleteUser('{{ u.username }}')">Remove</button>
         {% endif %}
       </div>
       {% endfor %}
     </div>
   </div>
 
-  <div class="panel">
-    <div class="panel-title">Statistics</div>
-    <div style="display:flex;flex-direction:column;gap:8px;font-size:12px">
+  <div class="card">
+    <div class="card-title">Platform Statistics</div>
+    <div style="display:flex;flex-direction:column;gap:10px;font-size:12px">
       <div class="stat-row"><span class="stat-key">Total users</span><span class="stat-val">{{ users|length }}</span></div>
       <div class="stat-row"><span class="stat-key">Admin accounts</span><span class="stat-val">{{ users|selectattr('role','equalto','admin')|list|length }}</span></div>
-      <div class="stat-row"><span class="stat-key">Total games played</span><span class="stat-val">{{ users|sum(attribute='games_played') }}</span></div>
-      <div class="stat-row"><span class="stat-key">Current session</span><span class="stat-val" style="color:var(--gold)">{{ user.username }}</span></div>
+      <div class="stat-row"><span class="stat-key">Total assessments</span><span class="stat-val">{{ users|sum(attribute='games_played') }}</span></div>
+      <div class="stat-row"><span class="stat-key">Active operator</span><span class="stat-val" style="color:var(--accent2)">{{ user.username }}</span></div>
     </div>
   </div>
+
+</div>
 </div>
 
 <script>
 async function deleteUser(username){
-  if(!confirm(`Delete user "${username}"? This cannot be undone.`))return;
+  if(!confirm(`Remove user "${username}"? This cannot be undone.`))return;
   const r=await fetch('/api/admin/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username})});
   const d=await r.json();
-  if(d.ok){
-    document.querySelector(`[data-username="${username}"]`).remove();
-  }
+  if(d.ok) document.querySelector(`[data-username="${username}"]`).remove();
 }
 async function doLogout(){
   await fetch('/api/auth/logout',{method:'POST'});
-  window.location.href='/';
+  window.location.replace('/?t='+Date.now());
 }
 </script>
 </body>

@@ -100,7 +100,7 @@ const Board = {
     if (!this._canvas || !this._board) return;
     const ctx = this._ctx;
     ctx.clearRect(0, 0, SIZE, SIZE);
-    ctx.fillStyle = '#181410';
+    ctx.fillStyle = '#070b14';
     ctx.beginPath();
     ctx.roundRect(0, 0, SIZE, SIZE, 10);
     ctx.fill();
@@ -115,7 +115,7 @@ const Board = {
         const [ax, ay] = nodePos(a),
           [bx, by] = nodePos(b);
         const isDiag = Math.floor(a / 5) !== Math.floor(b / 5) && (a % 5) !== (b % 5);
-        ctx.strokeStyle = isDiag ? 'rgba(212,175,80,.2)' : 'rgba(212,175,80,.38)';
+        ctx.strokeStyle = isDiag ? 'rgba(61,122,237,.18)' : 'rgba(99,140,210,.35)';
         ctx.lineWidth = 1.2;
         ctx.beginPath();
         ctx.moveTo(ax, ay);
@@ -160,7 +160,7 @@ const Board = {
       const [x, y] = nodePos(i);
       ctx.beginPath();
       ctx.arc(x, y, 2.8, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(212,175,80,.42)';
+      ctx.fillStyle = 'rgba(99,140,210,.38)';
       ctx.fill();
     }
 
@@ -193,7 +193,7 @@ const Board = {
       const [x, y] = nodePos(this._selected);
       ctx.beginPath();
       ctx.arc(x, y, 18, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(240,192,64,.25)';
+      ctx.strokeStyle = 'rgba(61,122,237,.4)';
       ctx.lineWidth = 1;
       ctx.stroke();
     }
@@ -218,7 +218,7 @@ const Board = {
     if (isSel) {
       ctx.beginPath();
       ctx.arc(x, y, 16, 0, Math.PI * 2);
-      ctx.strokeStyle = '#f0c040';
+      ctx.strokeStyle = '#5b93f5';
       ctx.lineWidth = 2;
       ctx.stroke();
     }
@@ -228,9 +228,9 @@ const Board = {
     ctx.fill();
     ctx.beginPath();
     ctx.arc(x, y, 12, 0, Math.PI * 2);
-    ctx.fillStyle = isTiger ? (isSel ? '#f09050' : '#e8712a') : (isSel ? '#fffff2' : '#e8e0cc');
+    ctx.fillStyle = isTiger ? (isSel ? '#f07070' : '#e05252') : (isSel ? '#deeaff' : '#c8d8f0');
     ctx.fill();
-    ctx.strokeStyle = isTiger ? 'rgba(255,200,120,.55)' : 'rgba(200,200,180,.45)';
+    ctx.strokeStyle = isTiger ? 'rgba(255,140,140,.45)' : 'rgba(160,190,240,.4)';
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.font = '13px sans-serif';

@@ -6,64 +6,67 @@
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Baghchal — Sign In</title>
-<link href="https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Sanskrit&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<title>BEINT — Sign In</title>
 <link rel="stylesheet" href="/static/css/main.css">
-<style>
-body{justify-content:center}
-.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;width:100%;max-width:380px;display:flex;flex-direction:column;gap:14px}
-.tabs{display:flex;border:1px solid var(--border);border-radius:7px;overflow:hidden}
-.tab{flex:1;padding:9px;background:transparent;border:none;color:var(--text-dim);font-size:12px;font-family:'Inter',sans-serif;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .2s}
-.tab.active{background:rgba(212,175,80,.1);color:var(--gold)}
-.form{display:none;flex-direction:column;gap:12px}
-.form.show{display:flex}
-.hint{font-size:10px;color:var(--text-dim);text-align:center;padding:8px;border:1px solid var(--border);border-radius:6px;line-height:1.6}
-.token-box{display:none;background:var(--surface2);border:1px solid rgba(212,175,80,.3);border-radius:6px;padding:10px;font-size:12px;color:var(--gold);text-align:center;word-break:break-all}
-</style>
 </head>
 <body>
-<div class="header"><h1 class="logo">बाघचाल</h1><p class="sub">Baghchal &mdash; Tigers &amp; Goats</p></div>
+<div class="auth-wrap">
 
-<div class="auth-card">
-  <div class="tabs">
-    <button class="tab active" id="tab-login"    onclick="showTab('login')">Sign In</button>
-    <button class="tab"        id="tab-register" onclick="showTab('register')">Register</button>
-    <button class="tab"        id="tab-forgot"   onclick="showTab('forgot')">Reset</button>
-  </div>
-
-  <div class="form show" id="form-login">
-    <div class="field"><label>Username</label><input id="li-user" type="text" placeholder="username" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
-    <div class="field"><label>Password</label><input id="li-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
-    <div class="msg err" id="li-err"></div>
-    <button class="btn primary" onclick="doLogin()">Sign In</button>
-    <div class="hint">Demo: <b>admin / admin</b> &nbsp;·&nbsp; <b>guest / guest</b></div>
-  </div>
-
-  <div class="form" id="form-register">
-    <div class="field"><label>Username</label><input id="reg-user" type="text" placeholder="choose a username"></div>
-    <div class="field"><label>Password</label><input id="reg-pass" type="password" placeholder="min 4 characters"></div>
-    <div class="field"><label>Confirm Password</label><input id="reg-pass2" type="password" placeholder="repeat password"></div>
-    <div class="field"><label>Email (optional)</label><input id="reg-email" type="email" placeholder="you@example.com"></div>
-    <div class="msg err" id="reg-err"></div>
-    <button class="btn primary" onclick="doRegister()">Create Account</button>
-  </div>
-
-  <div class="form" id="form-forgot">
-    <p style="font-size:12px;color:var(--text-dim);line-height:1.6">Generate a reset token for your account (shown here — no email sent in this demo).</p>
-    <div class="field"><label>Username</label><input id="fp-user" type="text" placeholder="your username"></div>
-    <div class="msg err" id="fp-err"></div>
-    <div class="msg ok"  id="fp-ok"></div>
-    <div class="token-box" id="fp-token-display"></div>
-    <button class="btn primary" onclick="doForgot()">Generate Token</button>
-    <div id="fp-fields" style="display:none;flex-direction:column;gap:10px">
-      <div class="field"><label>Token</label><input id="fp-token-in" type="text" placeholder="paste token here"></div>
-      <div class="field"><label>New Password</label><input id="fp-newpass" type="password" placeholder="new password"></div>
-      <button class="btn primary" onclick="doReset()">Reset Password</button>
+  <div class="auth-header">
+    <div class="beint-wordmark">
+      <div class="beint-logo-mark">
+        <svg viewBox="0 0 18 18"><rect x="2" y="2" width="6" height="6" rx="1"/><rect x="10" y="2" width="6" height="6" rx="1"/><rect x="2" y="10" width="6" height="6" rx="1"/><rect x="10" y="10" width="6" height="6" rx="1"/></svg>
+      </div>
+      <div>
+        <div class="beint-name">BE<span>INT</span></div>
+      </div>
     </div>
-    <button class="link-btn" onclick="showTab('login')">← Back to Sign In</button>
+    <div class="auth-sub" style="margin-top:10px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-dim)">Behavioral Intelligence Platform</div>
   </div>
-</div>
 
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login"    onclick="showTab('login')">Sign In</button>
+      <button class="auth-tab"        id="tab-register" onclick="showTab('register')">Register</button>
+      <button class="auth-tab"        id="tab-forgot"   onclick="showTab('forgot')">Reset</button>
+    </div>
+
+    <div class="auth-form show" id="form-login">
+      <div class="field"><label>Username</label><input id="li-user" type="text" placeholder="username" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="field"><label>Password</label><input id="li-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="msg err" id="li-err"></div>
+      <button class="btn btn-primary" onclick="doLogin()">Sign In</button>
+      <div class="auth-hint">Demo access &nbsp;·&nbsp; <strong>admin / admin</strong> &nbsp;·&nbsp; <strong>guest / guest</strong></div>
+    </div>
+
+    <div class="auth-form" id="form-register">
+      <div class="field"><label>Username</label><input id="reg-user" type="text" placeholder="choose a username"></div>
+      <div class="field"><label>Password</label><input id="reg-pass" type="password" placeholder="min 4 characters"></div>
+      <div class="field"><label>Confirm Password</label><input id="reg-pass2" type="password" placeholder="repeat password"></div>
+      <div class="field"><label>Email <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label><input id="reg-email" type="email" placeholder="you@company.com"></div>
+      <div class="msg err" id="reg-err"></div>
+      <button class="btn btn-primary" onclick="doRegister()">Create Account</button>
+    </div>
+
+    <div class="auth-form" id="form-forgot">
+      <p style="font-size:12px;color:var(--text-dim);line-height:1.65">Generate a one-time reset token. Token is valid for 5 minutes.</p>
+      <div class="field"><label>Username</label><input id="fp-user" type="text" placeholder="your username"></div>
+      <div class="msg err" id="fp-err"></div>
+      <div class="msg ok"  id="fp-ok"></div>
+      <div class="token-box" id="fp-token-display"></div>
+      <button class="btn btn-primary" onclick="doForgot()">Generate Token</button>
+      <div id="fp-fields" style="display:none;flex-direction:column;gap:10px">
+        <div class="field"><label>Token</label><input id="fp-token-in" type="text" placeholder="paste token"></div>
+        <div class="field"><label>New Password</label><input id="fp-newpass" type="password" placeholder="new password"></div>
+        <button class="btn btn-primary" onclick="doReset()">Reset Password</button>
+      </div>
+      <button class="link-btn" onclick="showTab('login')">← Back to Sign In</button>
+    </div>
+  </div>
+
+  <div class="auth-footer">© BEINT &nbsp;·&nbsp; Behavioral Assessment Technology</div>
+
+</div>
 <script>
 function showTab(t){
   ['login','register','forgot'].forEach(x=>{
@@ -78,24 +81,24 @@ async function post(url,body){
 async function doLogin(){
   const d=await post('/api/auth/login',{username:document.getElementById('li-user').value.trim(),password:document.getElementById('li-pass').value});
   document.getElementById('li-err').textContent=d.ok?'':d.error;
-  if(d.ok) window.location.replace('/?t=' + Date.now());
+  if(d.ok) window.location.replace('/?t='+Date.now());
 }
 async function doRegister(){
-  const p=document.getElementById('reg-pass').value, p2=document.getElementById('reg-pass2').value;
+  const p=document.getElementById('reg-pass').value,p2=document.getElementById('reg-pass2').value;
   const e=document.getElementById('reg-err');
   if(p!==p2){e.textContent='Passwords do not match.';return;}
   const d=await post('/api/auth/register',{username:document.getElementById('reg-user').value.trim(),password:p,email:document.getElementById('reg-email').value.trim()});
   e.textContent=d.ok?'':d.error;
-  if(d.ok) window.location.replace('/?t=' + Date.now());
+  if(d.ok) window.location.replace('/?t='+Date.now());
 }
 async function doForgot(){
   const u=document.getElementById('fp-user').value.trim();
-  const errEl=document.getElementById('fp-err'), okEl=document.getElementById('fp-ok');
-  errEl.textContent=''; okEl.textContent='';
+  const errEl=document.getElementById('fp-err'),okEl=document.getElementById('fp-ok');
+  errEl.textContent='';okEl.textContent='';
   const d=await post('/api/auth/forgot',{username:u});
   if(!d.ok){errEl.textContent=d.error;return;}
   const box=document.getElementById('fp-token-display');
-  box.style.display='block'; box.textContent='Token: '+d.token+' (valid 5 min)';
+  box.style.display='block';box.textContent='TOKEN: '+d.token+' (valid 5 min)';
   document.getElementById('fp-fields').style.display='flex';
   okEl.textContent='Copy the token above and paste below.';
 }
@@ -103,10 +106,10 @@ async function doReset(){
   const u=document.getElementById('fp-user').value.trim();
   const t=document.getElementById('fp-token-in').value.trim().toUpperCase();
   const p=document.getElementById('fp-newpass').value;
-  const errEl=document.getElementById('fp-err'), okEl=document.getElementById('fp-ok');
+  const errEl=document.getElementById('fp-err'),okEl=document.getElementById('fp-ok');
   const d=await post('/api/auth/reset',{username:u,token:t,password:p});
   if(!d.ok){errEl.textContent=d.error;return;}
-  okEl.textContent='Password reset! Redirecting...';
+  okEl.textContent='Password updated. Redirecting…';
   setTimeout(()=>showTab('login'),1500);
 }
 </script>

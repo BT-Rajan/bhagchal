@@ -1,163 +1,121 @@
-"""
-User model and authentication management.
-
-In-memory user store (swap for database in production).
-Uses constant-time comparison to prevent timing attacks on login.
-"""
 import hashlib
 import hmac
 import secrets
 import time
-from typing import Optional, Dict, Any, Tuple
+import uuid
+from typing import Optional, Tuple, Dict, Any
+
+from models.db import get_conn, tx
 
 
 class UserModel:
-    """Manages user accounts and authentication."""
 
-    def __init__(self):
-        self._users: Dict[str, Dict[str, Any]] = {}
-        self._tokens: Dict[str, Dict[str, Any]] = {}
-        self._seed_defaults()
+    def _hash(self, pw: str) -> str:
+        return hashlib.sha256(pw.encode()).hexdigest()
 
-    def _hash(self, password: str) -> str:
-        """
-        Hash password using SHA-256.
-        NOTE: Replace with bcrypt or argon2 before any production deployment.
-        """
-        return hashlib.sha256(password.encode()).hexdigest()
+    def _check(self, stored: str, pw: str) -> bool:
+        return hmac.compare_digest(stored, self._hash(pw))
 
-    def _check_password(self, stored_hash: str, password: str) -> bool:
-        """Constant-time comparison to prevent timing attacks."""
-        return hmac.compare_digest(stored_hash, self._hash(password))
-
-    def _seed_defaults(self) -> None:
-        """Seed default admin and guest users."""
-        defaults = [
-            ('admin', 'admin', 'admin'),
-            ('guest', 'guest', 'user'),
-        ]
-        for username, password, role in defaults:
-            key = username.lower()
-            self._users[key] = {
-                'username': username,
-                'password_hash': self._hash(password),
-                'role': role,
-                'created_at': '2024-01-01',
-                'games_played': 0,
-                'email': f'{username}@localhost',
-            }
-
-    def register(self, username: str, password: str, email: str = '') -> Tuple[bool, Any]:
-        """Register a new user account."""
+    def register(self, username: str, password: str, email: str = '', org_id: str = None) -> Tuple[bool, Any]:
         if not username or len(username) < 2:
             return False, 'Username must be at least 2 characters.'
-
         if not all(c.isalnum() or c == '_' for c in username):
             return False, 'Username: letters, numbers, underscores only.'
-
         if not password or len(password) < 4:
             return False, 'Password must be at least 4 characters.'
 
-        key = username.lower()
-        if key in self._users:
-            return False, 'Username already taken.'
+        if org_id is None:
+            conn = get_conn()
+            row = conn.execute('SELECT id FROM organizations LIMIT 1').fetchone()
+            org_id = row['id'] if row else None
 
-        self._users[key] = {
-            'username': username,
-            'password_hash': self._hash(password),
-            'role': 'user',
-            'created_at': time.strftime('%Y-%m-%d'),
-            'games_played': 0,
-            'email': email,
-        }
-        return True, self._users[key]
+        with tx() as conn:
+            exists = conn.execute('SELECT id FROM users WHERE username=? COLLATE NOCASE', (username,)).fetchone()
+            if exists:
+                return False, 'Username already taken.'
+            uid = str(uuid.uuid4())
+            conn.execute(
+                'INSERT INTO users(id,org_id,username,email,password_hash,role) VALUES(?,?,?,?,?,?)',
+                (uid, org_id, username, email, self._hash(password), 'user')
+            )
+
+        return True, self.get_user(username)
 
     def login(self, username: str, password: str) -> Tuple[bool, Any]:
-        """
-        Authenticate user credentials.
-        Returns a generic error message regardless of whether the username
-        or password was wrong, to prevent username enumeration.
-        """
-        key = username.lower()
-        user = self._users.get(key)
-
-        # Always hash (even for missing user) to keep response time constant
-        dummy_hash = self._hash('')
-        stored = user['password_hash'] if user else dummy_hash
-
-        if not user or not self._check_password(stored, password):
+        conn = get_conn()
+        user = conn.execute('SELECT * FROM users WHERE username=? COLLATE NOCASE', (username,)).fetchone()
+        dummy = self._hash('')
+        stored = user['password_hash'] if user else dummy
+        if not user or not self._check(stored, password):
             return False, 'Invalid username or password.'
-
-        return True, user
+        with tx() as c:
+            c.execute("UPDATE users SET last_login=datetime('now') WHERE id=?", (user['id'],))
+        return True, dict(user)
 
     def get_user(self, username: str) -> Optional[Dict[str, Any]]:
-        """Get user by username."""
-        return self._users.get(username.lower())
+        conn = get_conn()
+        row = conn.execute('SELECT * FROM users WHERE username=? COLLATE NOCASE', (username,)).fetchone()
+        return dict(row) if row else None
 
-    def all_users(self) -> list:
-        """Get all users (excludes password hashes)."""
-        return [
-            {k: v for k, v in u.items() if k != 'password_hash'}
-            for u in self._users.values()
-        ]
+    def get_user_by_id(self, uid: str) -> Optional[Dict[str, Any]]:
+        conn = get_conn()
+        row = conn.execute('SELECT * FROM users WHERE id=?', (uid,)).fetchone()
+        return dict(row) if row else None
 
-    def delete_user(self, username: str) -> bool:
-        """Delete a non-admin user. Returns False if not found or is admin."""
-        key = username.lower()
-        user = self._users.get(key)
-        if not user:
-            return False
-        if user['role'] == 'admin':
-            return False
-        del self._users[key]
-        return True
+    def all_users(self, org_id: str = None) -> list:
+        conn = get_conn()
+        if org_id:
+            rows = conn.execute('SELECT * FROM users WHERE org_id=? ORDER BY created_at DESC', (org_id,)).fetchall()
+        else:
+            rows = conn.execute('SELECT * FROM users ORDER BY created_at DESC').fetchall()
+        return [{k: v for k, v in dict(r).items() if k != 'password_hash'} for r in rows]
 
     def increment_games(self, username: str) -> None:
-        """Increment games played counter."""
-        user = self._users.get(username.lower())
-        if user:
-            user['games_played'] = user.get('games_played', 0) + 1
+        with tx() as conn:
+            conn.execute('UPDATE users SET games_played=games_played+1 WHERE username=?', (username,))
+
+    def delete_user(self, username: str) -> bool:
+        conn = get_conn()
+        user = conn.execute('SELECT * FROM users WHERE username=?', (username,)).fetchone()
+        if not user or user['role'] == 'admin':
+            return False
+        with tx() as c:
+            c.execute('DELETE FROM users WHERE username=?', (username,))
+        return True
 
     def generate_reset_token(self, username: str) -> Optional[str]:
-        """
-        Generate a password reset token (valid for 5 minutes).
-        Always returns None for unknown users without revealing their existence
-        — callers should show a generic 'if account exists, token was sent' message.
-        """
-        user = self._users.get(username.lower())
+        user = self.get_user(username)
         if not user:
             return None
-
         token = secrets.token_hex(6).upper()
-        self._tokens[username.lower()] = {
-            'token': token,
-            'expires': time.time() + 300,
-        }
+        with tx() as conn:
+            import json
+            meta = json.loads(user.get('metadata') or '{}')
+            meta['reset_token'] = token
+            meta['reset_expires'] = time.time() + 300
+            conn.execute('UPDATE users SET metadata=? WHERE username=?', (json.dumps(meta), username))
         return token
 
     def reset_password(self, username: str, token: str, new_password: str) -> Tuple[bool, str]:
-        """Reset password using token."""
+        import json
         if not new_password or len(new_password) < 4:
             return False, 'Password must be at least 4 characters.'
-
-        key = username.lower()
-        entry = self._tokens.get(key)
-
-        if not entry or not hmac.compare_digest(entry['token'], token):
-            return False, 'Invalid token.'
-
-        if time.time() > entry['expires']:
-            del self._tokens[key]
-            return False, 'Token expired.'
-
-        user = self._users.get(key)
+        user = self.get_user(username)
         if not user:
-            return False, 'User not found.'
-
-        user['password_hash'] = self._hash(new_password)
-        del self._tokens[key]
+            return False, 'Invalid token.'
+        meta = json.loads(user.get('metadata') or '{}')
+        stored_tok = meta.get('reset_token', '')
+        expires    = meta.get('reset_expires', 0)
+        if not hmac.compare_digest(stored_tok, token):
+            return False, 'Invalid token.'
+        if time.time() > expires:
+            return False, 'Token expired.'
+        meta.pop('reset_token', None)
+        meta.pop('reset_expires', None)
+        with tx() as conn:
+            conn.execute('UPDATE users SET password_hash=?,metadata=? WHERE username=?',
+                         (self._hash(new_password), json.dumps(meta), username))
         return True, 'Password reset successfully.'
 
 
-# Singleton instance
 user_model = UserModel()

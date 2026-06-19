@@ -229,7 +229,7 @@ function updateUI(d) {
   $id('captured-count').textContent = d.goats_captured;
   $id('placed-count').textContent = `${d.goats_placed} / 20`;
   $id('reserve-count').textContent = `${20 - d.goats_placed}`;
-  $id('phase-label').textContent = d.phase === 1 ? 'Phase 1: Placement' : 'Phase 2: Movement';
+  $id('phase-label').textContent = d.phase === 1 ? 'Phase I — Placement' : 'Phase II — Movement';
   $id('tiger-moves').textContent = d.tiger_moves;
   $id('goat-moves').textContent = d.goat_moves;
   document.querySelectorAll('.cap-pip').forEach((p, i) => p.classList.toggle('filled', i < d.goats_captured));
@@ -246,8 +246,8 @@ function updateUI(d) {
 
   const isGoat = (d.current_turn === 'goat');
   const ti = $id('tiger-turn-ind'), gi = $id('goat-turn-ind');
-  if (ti) { ti.className = 'turn-ind' + (!isGoat ? ' active' : ' inactive'); ti.textContent = !isGoat ? '▶ Active' : 'Waiting'; }
-  if (gi) { gi.className = 'turn-ind' + (isGoat ? ' active goat-t' : ' inactive'); gi.textContent = isGoat ? '▶ Active' : 'Waiting'; }
+  if (ti) { ti.className = 'turn-ind' + (!isGoat ? ' active' : ' inactive'); ti.textContent = !isGoat ? '▶ Active' : 'Standby'; }
+  if (gi) { gi.className = 'turn-ind' + (isGoat ? ' active goat-t' : ' inactive'); gi.textContent = isGoat ? '▶ Active' : 'Standby'; }
 
   const undoBtn = $id('undo-btn');
   if (undoBtn) undoBtn.disabled = !d.can_undo;
@@ -267,7 +267,7 @@ function postMoveStatus() {
   if (d.status !== 'active') { showResult(d.status); return; }
   const t = d.current_turn;
   if (d.mode === 'ai' && t !== d.human_role) {
-    setStatus('Computer is thinking…', 'gold');
+    setStatus('Engine is processing…', 'info');
     return;
   }
   if (d.mode === 'hotseat') {
@@ -331,7 +331,7 @@ function onCanvasClick(e) {
   if (!_state || _state.status !== 'active' || _locked) return;
   if (_state.draw_offered) return;
   if (_state.mode === 'ai' && _state.current_turn !== _state.human_role) {
-    setStatus('Computer is thinking — please wait…', 'gold');
+    setStatus('Engine is processing — please wait…', 'info');
     return;
   }
 
@@ -455,7 +455,7 @@ async function doAction(actionType, extra = {}) {
   Board.setSelected(-1);
   Board.setValidMoves([]);
   $cls('board', 'add', 'blocked');
-  setStatus('Sending…', 'gold');
+  setStatus('Transmitting…', 'info');
 
   const body = { game_id: _gameId, action_type: actionType, ...extra };
   let d;
@@ -478,7 +478,7 @@ async function doAction(actionType, extra = {}) {
     if (btn) {
       btn.style.display = 'inline-block';
       btn.disabled = false;
-      btn.textContent = '▶ Next Game';
+      btn.textContent = '▶ Next Assessment';
     }
     // Stop timer if any
     stopTimer();
@@ -498,7 +498,7 @@ async function doAction(actionType, extra = {}) {
     const justEnteredPhase2 = wasPhase1 && d.phase === 2 && d.status === 'active';
 
     if (d.ai_action_type && d.ai_to >= 0) {
-      setStatus('Computer moved.', 'gold');
+      setStatus('Engine responded.', 'info');
       const aiFrom = d.ai_from >= 0 ? d.ai_from : d.ai_to;
       const aiPiece = d.human_role === 'tiger' ? 'goat' : 'tiger';
       Board.animateMove(aiFrom, d.ai_to, aiPiece, d.ai_captured, () => {
@@ -606,7 +606,7 @@ window.doOfferDraw = async function() {
   if (!_gameId || _locked) return;
   _locked = true;
   const btn = $id('draw-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Waiting…'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Awaiting…'; }
   try {
     const d = await post('/api/game/draw', { game_id: _gameId, action: 'offer' });
     if (!d.ok) { setStatus(d.error || 'Draw offer failed.', 'err'); return; }
@@ -712,7 +712,7 @@ function showResult(status) {
     if (!existing) {
       const btn = document.createElement('button');
       btn.className = 'btn primary next-game-modal-btn';
-      btn.textContent = '▶ Next Game';
+      btn.textContent = '▶ Next Assessment';
       btn.onclick = () => {
         $cls('win-modal', 'remove', 'show');
         window.goToNextGame();
