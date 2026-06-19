@@ -176,11 +176,22 @@ def next_game():
     game['time_limit'] = time_limit
     game['time_remaining'] = time_limit
     
-    # 'tiger' always moves first; if the human was assigned 'goat' for this
-    # round, the AI (playing tiger) needs to make its opening move now --
-    # otherwise the game sits frozen forever waiting for a "human turn"
-    # that never arrives.
-    ai_fields = _run_ai_followup(game)
+    # Tiger always moves first. If the human plays goat this round, the AI
+    # (tiger) must make its opening move immediately so the human isn't
+    # waiting for a turn that never arrives.
+    if human_role == 'goat':
+        s = game['state']
+        ai_mv = ai_service.find_best_move(s, 'tiger', difficulty)
+        if ai_mv:
+            ai_ts = time.time()
+            ai_legal = format_moves_list(GameEngine.get_all_moves(s, 'tiger'))
+            cap = ai_mv.get('capture', -1)
+            desc = (f"{node_label(ai_mv['from'])} → {node_label(ai_mv['to'])}"
+                    + (f" ✕{node_label(cap)}" if cap >= 0 else ''))
+            new_state, _ = GameEngine.apply_move(s, ai_mv)
+            game['state'] = new_state
+            game_store.add_move_log(game, 'tiger', desc, cap >= 0, ai_ts, ai_legal)
+
     game_store.save_game(game)
 
     return jsonify({'ok': True, **_state_payload(game)})
