@@ -102,23 +102,45 @@ async function get(url) {
 /* ── Session: start next game ── */
 async function startNextGame() {
   console.log('Fetching next game...');
+  // Reset all per-round state so nothing bleeds from the previous round.
+  _locked = false;
+  _handoverShown = false;
+  _selected = -1;
+  _validMoves = [];
+  stopTimer();
+  // Remove any "Next Game" button cloned into the modal by showResult().
+  const modal = $id('win-modal');
+  if (modal) {
+    const cloned = modal.querySelector('.next-game-modal-btn');
+    if (cloned) cloned.remove();
+  }
+  $cls('win-modal',      'remove', 'show');
+  $cls('phase-overlay',  'remove', 'show');
+  $cls('handover-overlay','remove','show');
+  $cls('draw-banner',    'remove', 'show');
+  const drawBtn = $id('draw-btn');
+  if (drawBtn) { drawBtn.disabled = false; drawBtn.textContent = 'Offer Draw'; }
+  const ngBtn = $id('next-game-btn');
+  if (ngBtn) { ngBtn.style.display = 'none'; ngBtn.disabled = true; }
+
   try {
     const d = await get('/api/game/next');
     if (!d.ok || d.error) {
-      setStatus(d.error || 'All games completed!', 'ok');
-      // Show a "finished" message and perhaps a button to view report
+      setStatus(d.error || 'Session complete!', 'ok');
       const btn = $id('next-game-btn');
       if (btn) { btn.disabled = true; btn.textContent = 'Session Complete'; }
       return;
     }
     applyState(d);
     showGameScreen();
+    _resetInactivityTimer();
     if (d.time_limit) {
       _isTimedGame = true;
       startTimer(d.time_limit);
     } else {
       _isTimedGame = false;
-      $id('timer-display').style.display = 'none';
+      const td = $id('timer-display');
+      if (td) td.style.display = 'none';
     }
   } catch (e) {
     console.error('startNextGame error:', e);
@@ -523,6 +545,7 @@ function applyServerState(d) {
   _state = d;
   _selected = -1;
   _validMoves = [];
+  _locked = false;   // always unlock — resign/draw ends the game visually via modal, not _locked
   Board.setBoard(d.board);
   Board.setSelected(-1);
   Board.setValidMoves([]);
@@ -563,12 +586,15 @@ window.doUndo = async function() {
 
 window.doResign = async function() {
   if (!_gameId || _locked) return;
-  if (!confirm('Are you sure you want to resign this game?')) return;
+  if (!confirm('Are you sure you want to resign? The opponent will be declared the winner.')) return;
   stopTimer();
   _locked = true;
   try {
     const d = await post('/api/game/resign', { game_id: _gameId });
     applyServerState(d);
+    // applyServerState calls postMoveStatus which calls showResult for non-active.
+    // _locked is reset by applyServerState; showResult freezes the board visually
+    // via the modal, not via _locked, so the modal buttons stay clickable.
   } catch (e) {
     setStatus('Error: ' + e.message, 'err');
     alert('Resign error: ' + e.message);
@@ -583,6 +609,7 @@ window.doOfferDraw = async function() {
   if (btn) { btn.disabled = true; btn.textContent = 'Waiting…'; }
   try {
     const d = await post('/api/game/draw', { game_id: _gameId, action: 'offer' });
+    if (!d.ok) { setStatus(d.error || 'Draw offer failed.', 'err'); return; }
     applyServerState(d);
     if (d.ai_response === 'accepted') {
       setStatus('Computer accepted the draw.', 'ok');
@@ -710,38 +737,74 @@ function showGameScreen() {
   }
 }
 
-window.goToLobby = function() {
+window.goToLobby = async function() {
   Board.cancelAnim();
   stopTimer();
-  $cls('win-modal', 'remove', 'show');
-  $cls('phase-overlay', 'remove', 'show');
-  $cls('handover-overlay', 'remove', 'show');
-  $cls('draw-banner', 'remove', 'show');
-  $id('game-screen').style.display = 'none';
-  $id('role-screen').style.display = 'flex';
+  _clearInactivityTimer();
+  $cls('win-modal',       'remove', 'show');
+  $cls('phase-overlay',   'remove', 'show');
+  $cls('handover-overlay','remove', 'show');
+  $cls('draw-banner',     'remove', 'show');
+
+  // Forfeit current game + any unplayed rounds in this session.
+  try {
+    await post('/api/game/quit_session', { game_id: _gameId });
+  } catch (e) {
+    console.warn('quit_session failed:', e.message);
+  }
+
   _gameId = null;
-  _state = null;
+  _state  = null;
   _selected = -1;
   _validMoves = [];
   _locked = false;
   _handoverShown = false;
   const btn = $id('draw-btn');
   if (btn) { btn.disabled = false; btn.textContent = 'Offer Draw'; }
-  // Hide next game button
   const ng = $id('next-game-btn');
   if (ng) { ng.style.display = 'none'; ng.disabled = true; }
   window.location.replace('/?t=' + Date.now());
 };
+
+/* ── Inactivity timeout (10 minutes) ── */
+const INACTIVITY_MS = 10 * 60 * 1000;
+let _inactivityTimer = null;
+
+function _resetInactivityTimer() {
+  if (_inactivityTimer) clearTimeout(_inactivityTimer);
+  if (!_gameId || !_state || _state.status !== 'active') return;
+  _inactivityTimer = setTimeout(() => {
+    alert('You have been inactive for 10 minutes. The session will be ended.');
+    goToLobby();
+  }, INACTIVITY_MS);
+}
+
+function _clearInactivityTimer() {
+  if (_inactivityTimer) { clearTimeout(_inactivityTimer); _inactivityTimer = null; }
+}
+
+/* ── Browser/tab close: fire-and-forget beacon to quit the session ── */
+window.addEventListener('beforeunload', () => {
+  if (_gameId) {
+    const body = JSON.stringify({ game_id: _gameId });
+    // sendBeacon is the only API guaranteed to complete during unload.
+    navigator.sendBeacon('/api/game/quit_session', new Blob([body], { type: 'application/json' }));
+  }
+});
 
 /* ── Init ── */
 window.addEventListener('DOMContentLoaded', () => {
   Board.init('board');
   const canvas = $id('board');
   if (canvas) {
-    canvas.addEventListener('click', onCanvasClick);
+    canvas.addEventListener('click', e => { _resetInactivityTimer(); onCanvasClick(e); });
     canvas.addEventListener('mousemove', onCanvasHover);
     canvas.addEventListener('mouseleave', () => { Board.setHover(-1); Board.draw(); });
   }
-  // Auto-start the first game
+  // Reset inactivity timer on any user interaction anywhere on the page.
+  ['click', 'keydown', 'touchstart'].forEach(evt =>
+    document.addEventListener(evt, _resetInactivityTimer, { passive: true })
+  );
+  // Auto-start the first game.
   startNextGame();
 });

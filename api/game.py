@@ -175,6 +175,12 @@ def next_game():
     game['game_number'] = num
     game['time_limit'] = time_limit
     game['time_remaining'] = time_limit
+    
+    # 'tiger' always moves first; if the human was assigned 'goat' for this
+    # round, the AI (playing tiger) needs to make its opening move now --
+    # otherwise the game sits frozen forever waiting for a "human turn"
+    # that never arrives.
+    ai_fields = _run_ai_followup(game)
     game_store.save_game(game)
 
     return jsonify({'ok': True, **_state_payload(game)})
@@ -351,6 +357,53 @@ def resign():
     sess = session_store.get_session(username)
     payload['next_game_available'] = bool(sess and sess['current_game'] <= 5)
     return jsonify({'ok': True, **payload})
+
+
+@game_bp.route('/quit_session', methods=['POST'])
+def quit_session():
+    """
+    Quit the current 5-game session. The active game (if any) and every
+    round that hadn't been started yet are recorded as forfeited, so the
+    session always ends with a complete 5-game record rather than gaps.
+    Also used by the client's inactivity timeout and browser-close beacon.
+    """
+    username = session.get('username')
+    if not username:
+        return jsonify({'ok': False, 'error': 'Not authenticated'}), 401
+    
+    data = request.get_json(silent=True) or {}
+    game_id = data.get('game_id')
+    
+    sess = session_store.get_session(username)
+    if not sess:
+        return jsonify({'ok': True, 'forfeited': []})
+    
+    forfeited = []
+    
+    # Forfeit the game currently in progress, if any.
+    if game_id:
+        game = game_store.get_game(game_id)
+        if game and game['username'] == username and game['state']['status'] == 'active':
+            _forfeit_game(game)
+            forfeited.append(game.get('game_number'))
+    
+    # Forfeit every round that was never even started.
+    if not sess['finished']:
+        for num in range(sess['current_game'], 6):
+            if num not in SESSION_PARAMS:
+                continue
+            human_role, difficulty = SESSION_PARAMS[num]
+            gid = game_store.new_game(username, 'ai', human_role, difficulty)
+            g = game_store.get_game(gid)
+            g['game_number'] = num
+            g['session_game_id'] = f"{sess['session_id']}_{num:03d}"
+            _forfeit_game(g)
+            forfeited.append(num)
+        sess['current_game'] = 6
+    
+    session_store.mark_finished(username)
+    
+    return jsonify({'ok': True, 'forfeited': forfeited})
 
 
 @game_bp.route('/draw', methods=['POST'])

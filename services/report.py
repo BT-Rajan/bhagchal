@@ -106,10 +106,24 @@ class ReportService:
     @staticmethod
     def _analyze_and_send(report: Dict[str, Any], filepath: str) -> None:
         """Run the analysis pipeline, build the PDF, and email/log it. Never raises."""
-        from services.analysis_service import analyze_report, AnalysisError
+        from services.analysis_service import (
+            analyze_report, build_analysis_prompt,
+            summarize_player_stats, AnalysisError
+        )
         from services.report_pdf import generate_pdf_report
         from services.mailer import send_report_email, MailError
-        
+
+        # Save the prompt used, for audit/debugging purposes.
+        try:
+            stats, human_moves = summarize_player_stats(report)
+            if stats and human_moves:
+                prompt_text = build_analysis_prompt(stats, human_moves, report)
+                prompt_path = filepath.replace('.json', '.prompt')
+                with open(prompt_path, 'w', encoding='utf-8') as f:
+                    f.write(prompt_text.strip())
+        except Exception:
+            pass  # never block analysis on a prompt-save failure
+
         try:
             profile = analyze_report(report)
         except AnalysisError as e:
@@ -119,7 +133,7 @@ class ReportService:
             print(f"[report] Unexpected error analyzing {filepath}:")
             traceback.print_exc()
             return
-        
+
         pdf_path = filepath.replace('.json', '_analysis.pdf')
         try:
             generate_pdf_report(report, profile, pdf_path)
@@ -127,7 +141,7 @@ class ReportService:
             print(f"[report] Unexpected error building PDF for {filepath}:")
             traceback.print_exc()
             return
-        
+
         try:
             send_report_email(report, profile, pdf_path)
         except MailError as e:
