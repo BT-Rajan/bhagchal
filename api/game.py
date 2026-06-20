@@ -177,24 +177,38 @@ def next_game():
     game['time_remaining'] = time_limit
     
     # Tiger always moves first. If the human plays goat this round, the AI
-    # (tiger) must make its opening move immediately so the human isn't
-    # waiting for a turn that never arrives.
+    # (tiger) must make its opening move immediately.
+    ai_action_type = ai_from = ai_to = ai_desc = None
+    ai_captured = -1
+
     if human_role == 'goat':
         s = game['state']
         ai_mv = ai_service.find_best_move(s, 'tiger', difficulty)
         if ai_mv:
-            ai_ts = time.time()
+            ai_ts    = time.time()
             ai_legal = format_moves_list(GameEngine.get_all_moves(s, 'tiger'))
-            cap = ai_mv.get('capture', -1)
-            desc = (f"{node_label(ai_mv['from'])} → {node_label(ai_mv['to'])}"
-                    + (f" ✕{node_label(cap)}" if cap >= 0 else ''))
+            cap      = ai_mv.get('capture', -1)
+            ai_action_type = ai_mv['type']
+            ai_from  = ai_mv.get('from', -1)
+            ai_to    = ai_mv['to']
+            ai_captured = cap
+            ai_desc  = (f"{node_label(ai_from)} → {node_label(ai_to)}"
+                        + (f" ✕{node_label(cap)}" if cap >= 0 else ''))
             new_state, _ = GameEngine.apply_move(s, ai_mv)
             game['state'] = new_state
-            game_store.add_move_log(game, 'tiger', desc, cap >= 0, ai_ts, ai_legal)
+            game_store.add_move_log(game, 'tiger', ai_desc, cap >= 0, ai_ts, ai_legal)
 
     game_store.save_game(game)
 
-    return jsonify({'ok': True, **_state_payload(game)})
+    payload = _state_payload(game)
+    payload.update({
+        'ai_action_type': ai_action_type,
+        'ai_from':        ai_from if ai_from is not None else -1,
+        'ai_to':          ai_to   if ai_to   is not None else -1,
+        'ai_captured':    ai_captured,
+        'ai_desc':        ai_desc,
+    })
+    return jsonify({'ok': True, **payload})
 
 
 @game_bp.route('/move', methods=['POST'])
