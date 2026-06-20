@@ -750,16 +750,22 @@ window.addEventListener('beforeunload', ()=>{
 /* ── Init ── */
 window.startNextGame = startNextGame;
 
-window.addEventListener('DOMContentLoaded', () => {
-  Board.init('board');
-  const canvas = $id('board');
-  if (canvas) {
-    canvas.addEventListener('click', e=>{ _resetInactivityTimer(); onCanvasClick(e); });
-    canvas.addEventListener('mousemove', onCanvasHover);
-    canvas.addEventListener('mouseleave', ()=>{ Board.setHover(-1); Board.draw(); });
-  }
-  ['click','keydown','touchstart'].forEach(evt=>
-    document.addEventListener(evt, _resetInactivityTimer, {passive:true}));
-  // Do NOT auto-start — user must click "Begin Assessment"
-  showTip(0);
-});
+// Initialise the canvas immediately (scripts are at end of body, DOM is ready)
+Board.init('board');
+
+const canvas = $id('board');
+if (canvas) {
+  canvas.addEventListener('click', e => { _resetInactivityTimer(); onCanvasClick(e); });
+  canvas.addEventListener('mousemove', onCanvasHover);
+  canvas.addEventListener('mouseleave', () => { Board.setHover(-1); Board.draw(); });
+}
+['click','keydown','touchstart'].forEach(evt =>
+  document.addEventListener(evt, _resetInactivityTimer, { passive: true }));
+
+// Wire Begin Assessment button
+const _startBtn = $id('start-session-btn');
+if (_startBtn) {
+  _startBtn.addEventListener('click', () => startNextGame());
+}
+
+showTip(0);
