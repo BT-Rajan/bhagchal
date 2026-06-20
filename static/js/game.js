@@ -679,9 +679,11 @@ window.dismissPhaseOverlay = function() { $cls('phase-overlay','remove','show');
 
 /* ── Next game ── */
 window.goToNextGame = function() {
-  const btn=$id('next-game-btn');
-  if (btn) { btn.style.display='none'; btn.disabled=true; }
-  stopTimer(); startNextGame();
+  // Reload the page — server will return updated current_game in the session,
+  // showing the plan screen with completed games marked and next game highlighted.
+  Board.cancelAnim();
+  stopTimer();
+  window.location.replace('/?t=' + Date.now());
 };
 
 /* ── Result modal ── */
@@ -702,8 +704,8 @@ function showResult(status) {
     if (!modal.querySelector('.next-game-modal-btn')) {
       const btn = document.createElement('button');
       btn.className='btn btn-primary next-game-modal-btn';
-      btn.textContent='▶ Next Assessment';
-      btn.onclick=()=>{ $cls('win-modal','remove','show'); window.goToNextGame(); };
+      btn.textContent='▶ Next Game';
+      btn.onclick=()=>{ window.goToNextGame(); };
       modal.querySelector('.overlay-card').appendChild(btn);
     }
   }

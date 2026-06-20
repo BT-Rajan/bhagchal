@@ -60,13 +60,48 @@
   <div class="session-start">
     <div class="session-heading">Psychometric Assessment — 5-Game Protocol</div>
     <div class="session-plan">
-      <div class="plan-row"><div class="plan-num">1</div><div class="plan-name">Tiger — Calibration</div><span class="plan-tag plan-tag-easy">Easy</span></div>
-      <div class="plan-row"><div class="plan-num">2</div><div class="plan-name">Goat — Calibration</div><span class="plan-tag plan-tag-easy">Easy</span></div>
-      <div class="plan-row"><div class="plan-num">3</div><div class="plan-name">Tiger — Assessment</div><span class="plan-tag plan-tag-medium">Medium</span></div>
-      <div class="plan-row"><div class="plan-num">4</div><div class="plan-name">Goat — Assessment</div><span class="plan-tag plan-tag-medium">Medium</span></div>
-      <div class="plan-row"><div class="plan-num">5</div><div class="plan-name">Tiger — Stress Protocol</div><span class="plan-tag plan-tag-timed">Timed · 7 min</span></div>
+      {% set games = [
+        (1, 'Tiger — Calibration',    'easy',   'Easy',          false),
+        (2, 'Goat — Calibration',     'easy',   'Easy',          false),
+        (3, 'Tiger — Assessment',     'medium', 'Medium',        false),
+        (4, 'Goat — Assessment',      'medium', 'Medium',        false),
+        (5, 'Tiger — Stress Protocol','hard',   'Timed · 7 min', true),
+      ] %}
+      {% for num, name, diff, label, timed in games %}
+        {% if num < current_game %}
+          {# Completed #}
+          <div class="plan-row plan-row-done">
+            <div class="plan-num plan-num-done">✓</div>
+            <div class="plan-name" style="color:var(--text-dim);text-decoration:line-through">{{ name }}</div>
+            <span class="plan-tag plan-tag-done">Done</span>
+          </div>
+        {% elif num == current_game %}
+          {# Current — next to play #}
+          <div class="plan-row plan-row-active">
+            <div class="plan-num plan-num-active">{{ num }}</div>
+            <div class="plan-name" style="color:var(--text)">{{ name }}</div>
+            <span class="plan-tag {% if timed %}plan-tag-timed{% elif diff == 'easy' %}plan-tag-easy{% else %}plan-tag-medium{% endif %}">{{ label }}</span>
+          </div>
+        {% else %}
+          {# Pending #}
+          <div class="plan-row" style="opacity:.45">
+            <div class="plan-num">{{ num }}</div>
+            <div class="plan-name">{{ name }}</div>
+            <span class="plan-tag {% if timed %}plan-tag-timed{% elif diff == 'easy' %}plan-tag-easy{% else %}plan-tag-medium{% endif %}">{{ label }}</span>
+          </div>
+        {% endif %}
+      {% endfor %}
     </div>
-    <button class="start-btn" id="start-session-btn">▶ &nbsp; Begin Assessment</button>
+    {% if current_game <= 5 %}
+      <button class="start-btn" id="start-session-btn">
+        {% if current_game == 1 %}▶ &nbsp; Begin Assessment
+        {% else %}▶ &nbsp; Continue — Game {{ current_game }} of 5{% endif %}
+      </button>
+    {% else %}
+      <div style="text-align:center;color:var(--valid);font-size:13px;font-weight:600;padding:12px">
+        ✓ All 5 games completed. Session is finished.
+      </div>
+    {% endif %}
   </div>
 </div>
 
