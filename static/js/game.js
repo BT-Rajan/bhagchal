@@ -327,7 +327,8 @@ function postMoveStatus() {
   if (d.phase === 1) {
     setStatus(d.current_turn==='goat'
       ? '🐐 Your turn — click any empty intersection to place a goat.'
-      : '🐯 Your turn — select a tiger to move or capture.', 'd.current_turn==="goat"?'ok':'');
+      : '🐯 Your turn — select a tiger to move or capture.',
+      d.current_turn === 'goat' ? 'ok' : '');
   } else {
     setStatus(`${d.current_turn==='goat'?'🐐':'🐯'} Your turn — select a piece and move it.`);
   }
