@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<title>Cogzi BEINT v1.0 — Sponsor Portal</title>
+<link rel="stylesheet" href="/static/css/main.css">
+<script src="/static/js/theme.js"></script>
+<style>
+.sp { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.sp-full { grid-column:1/-1; }
+.tbl { width:100%; border-collapse:collapse; font-size:12px; }
+.tbl th { text-align:left; font:600 10px var(--font); letter-spacing:.12em; text-transform:uppercase; color:var(--text-dim); padding:6px 8px; border-bottom:1px solid var(--border); }
+.tbl td { padding:8px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.tbl tr:hover td { background:var(--surface2); }
+.tbl tr:last-child td { border-bottom:none; }
+.depth-badge { background:var(--accent-dim); color:var(--accent2); border:1px solid var(--border2); font:600 11px var(--mono); padding:2px 8px; border-radius:4px; }
+.status-badge { font-size:10px; padding:2px 7px; border-radius:3px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
+.status-win   { background:rgba(53,184,114,.12); color:var(--valid); }
+.status-loss  { background:var(--tiger-dim); color:var(--tiger); }
+.status-draw  { background:var(--accent-dim); color:var(--accent2); }
+.status-active{ background:rgba(217,149,64,.12); color:var(--warn); }
+.modal-overlay { display:none; position:fixed; inset:0; background:var(--overlay-bg); z-index:200; align-items:center; justify-content:center; }
+.modal-overlay.show { display:flex; }
+.modal-box { background:var(--surface); border:1px solid var(--border2); border-radius:10px; padding:26px; width:100%; max-width:400px; display:flex; flex-direction:column; gap:14px; }
+.modal-box h3 { font-size:14px; font-weight:600; }
+.modal-actions { display:flex; gap:8px; justify-content:flex-end; }
+.invite-box { background:var(--surface2); border:1px solid var(--border2); border-radius:5px; padding:10px; font:11px var(--mono); color:var(--accent3); word-break:break-all; margin-top:4px; }
+.tab-bar { display:flex; gap:2px; border-bottom:1px solid var(--border); margin-bottom:14px; }
+.tab-btn { background:none; border:none; border-bottom:2px solid transparent; color:var(--text-dim); font:500 11px var(--font); letter-spacing:.08em; text-transform:uppercase; padding:8px 14px; cursor:pointer; margin-bottom:-1px; }
+.tab-btn.active { color:var(--accent2); border-bottom-color:var(--accent2); }
+.tab-pane { display:none; } .tab-pane.show { display:block; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <div class="topnav-left">
+    <a class="wordmark" href="/">
+      <div class="wm-icon"><svg viewBox="0 0 18 18"><path d="M2 2h5v5H2zM11 2h5v5h-5zM2 11h5v5H2zM11 11h5v5h-5z"/></svg></div>
+      <div class="wm-text"><div class="wm-name">Cogzi <em>BEINT</em></div><div class="wm-ver">v1.0</div></div>
+    </a>
+    <select class="theme-select" onchange="setTheme(this.value)">
+      <option value="dark">Dark</option><option value="light">Light</option>
+      <option value="corp1">Corp 1 — Obsidian</option><option value="corp2">Corp 2 — Emerald</option>
+      <option value="corp3">Corp 3 — Violet</option>
+    </select>
+    <div class="nav-sep"></div><div class="nav-crumb">Sponsor Portal</div>
+  </div>
+  <div class="topnav-right">
+    <div class="nav-sep"></div>
+    <div class="nav-user"><strong>{{ user.username }}</strong></div>
+    <span class="badge badge-user" style="background:rgba(217,149,64,.12);color:var(--warn);border-color:rgba(217,149,64,.3)">sponsor</span>
+    <button class="btn btn-danger" onclick="doLogout()">Sign Out</button>
+  </div>
+</nav>
+
+<div class="page-body" style="padding-top:20px">
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="showTab('bundles')">Game Bundles</button>
+  <button class="tab-btn"       onclick="showTab('users')">Players</button>
+  <button class="tab-btn"       onclick="showTab('invites')">Invitations</button>
+  <button class="tab-btn"       onclick="showTab('reports')">Reports</button>
+</div>
+
+<!-- ── BUNDLES ── -->
+<div class="tab-pane show" id="tab-bundles">
+  <div class="sp">
+    <div class="card sp-full">
+      <div class="card-title">
+        Game Bundles
+        <button class="btn btn-primary" style="font-size:10px;padding:5px 12px" onclick="openModal('create-bundle')">+ New Bundle</button>
+      </div>
+      <p style="font-size:11px;color:var(--text-dim)">Set AI depth to control difficulty. Depth = number of moves the engine looks ahead (1 = easiest, 6 = hardest).</p>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr><th>Name</th><th>Description</th><th>AI Depth</th><th>Games</th><th>Actions</th></tr></thead>
+          <tbody id="sp-bundle-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── USERS ── -->
+<div class="tab-pane" id="tab-users">
+  <div class="sp">
+    <div class="card sp-full">
+      <div class="card-title">Players</div>
+      <input id="sp-user-search" placeholder="Search…" oninput="loadSPUsers()"
+        style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font:13px var(--font);padding:8px 12px;outline:none;width:100%">
+      <div style="overflow-x:auto;margin-top:10px">
+        <table class="tbl">
+          <thead><tr><th>Username</th><th>Email</th><th>Games</th><th>Joined</th><th>Assign Bundle</th></tr></thead>
+          <tbody id="sp-user-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── INVITES ── -->
+<div class="tab-pane" id="tab-invites">
+  <div class="sp">
+    <div class="card sp-full">
+      <div class="card-title">
+        Invitations
+        <button class="btn btn-primary" style="font-size:10px;padding:5px 12px" onclick="openModal('sp-invite')">+ Invite User</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr><th>Email</th><th>Token</th><th>Bundle</th><th>Status</th><th>Expires</th></tr></thead>
+          <tbody id="sp-invite-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── REPORTS ── -->
+<div class="tab-pane" id="tab-reports">
+  <div class="sp">
+    <div class="card sp-full">
+      <div class="card-title">Assessment Reports (last 200)</div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr><th>User</th><th>Role</th><th>AI Depth</th><th>Status</th><th>Duration</th><th>Date</th></tr></thead>
+          <tbody id="sp-report-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- ── MODALS ── -->
+
+<div class="modal-overlay" id="modal-create-bundle">
+  <div class="modal-box">
+    <h3>New Game Bundle</h3>
+    <div class="field"><label>Bundle Name</label><input id="sp-cb-name" type="text" placeholder="e.g. Q3 Assessment"></div>
+    <div class="field"><label>Description</label><input id="sp-cb-desc" type="text" placeholder="optional"></div>
+    <div class="field">
+      <label>AI Depth — difficulty (1 = easy, 6 = hardest)</label>
+      <input id="sp-cb-depth" type="range" min="1" max="6" value="3" oninput="document.getElementById('sp-cb-dv').textContent=this.value">
+      <span style="font-size:12px;color:var(--accent2)">Depth: <strong id="sp-cb-dv">3</strong></span>
+    </div>
+    <div class="field"><label>Number of Games per Session</label><input id="sp-cb-games" type="number" min="1" max="10" value="5"></div>
+    <div class="msg err" id="sp-cb-err"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('create-bundle')">Cancel</button>
+      <button class="btn btn-primary" onclick="createSPBundle()">Create</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-sp-assign">
+  <div class="modal-box">
+    <h3>Assign Bundle to <span id="spa-username"></span></h3>
+    <input type="hidden" id="spa-user">
+    <div class="field"><label>Select Bundle</label>
+      <select id="spa-bundle-sel"></select>
+    </div>
+    <div class="msg err" id="spa-err"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('sp-assign')">Cancel</button>
+      <button class="btn btn-primary" onclick="doAssign()">Assign</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-sp-invite">
+  <div class="modal-box">
+    <h3>Invite User</h3>
+    <div class="field"><label>Email</label><input id="sp-inv-email" type="email" placeholder="user@company.com"></div>
+    <div class="field"><label>Attach Bundle (optional)</label>
+      <select id="sp-inv-bundle"><option value="">— none —</option></select>
+    </div>
+    <div class="msg err" id="sp-inv-err"></div>
+    <div id="sp-inv-result" style="display:none">
+      <div class="msg ok">Invite created. Share this link:</div>
+      <div class="invite-box" id="sp-inv-link"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('sp-invite')">Close</button>
+      <button class="btn btn-primary" id="sp-inv-btn" onclick="sendInvite()">Send</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const post=(url,b)=>fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json());
+const get=url=>fetch(url).then(r=>r.json());
+const put=(url,b)=>fetch(url,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json());
+
+function openModal(n){document.getElementById('modal-'+n).classList.add('show');}
+function closeModal(n){document.getElementById('modal-'+n).classList.remove('show');}
+
+function showTab(name){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('show'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('show');
+  event.target.classList.add('active');
+  if(name==='bundles') loadSPBundles();
+  if(name==='users')   loadSPUsers();
+  if(name==='invites') loadSPInvites();
+  if(name==='reports') loadSPReports();
+}
+
+let _spBundles=[];
+async function loadSPBundles(){
+  const d=await get('/api/sponsor/bundles');
+  _spBundles=d.bundles||[];
+  const tb=document.getElementById('sp-bundle-tbody');
+  if(!_spBundles.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:18px">No bundles yet.</td></tr>';return;}
+  tb.innerHTML=_spBundles.map(b=>`
+    <tr>
+      <td><strong>${b.name}</strong></td>
+      <td style="color:var(--text-dim)">${b.description||'—'}</td>
+      <td><span class="depth-badge">${b.depth}</span></td>
+      <td>${b.game_count}</td>
+      <td><button class="btn" style="font-size:10px;padding:3px 8px" onclick="openSPAssignViaBundle('${b.id}','${b.name}')">Assign User</button></td>
+    </tr>`).join('');
+  // sync invite dropdown
+  const sel=document.getElementById('sp-inv-bundle');
+  if(sel) sel.innerHTML='<option value="">— none —</option>'+_spBundles.map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
+}
+
+async function createSPBundle(){
+  const err=document.getElementById('sp-cb-err');
+  const d=await post('/api/sponsor/bundles',{
+    name:document.getElementById('sp-cb-name').value.trim(),
+    description:document.getElementById('sp-cb-desc').value.trim(),
+    depth:parseInt(document.getElementById('sp-cb-depth').value),
+    game_count:parseInt(document.getElementById('sp-cb-games').value)
+  });
+  if(!d.ok){err.textContent=d.error;return;}
+  closeModal('create-bundle');
+  loadSPBundles();
+}
+
+async function loadSPUsers(){
+  const q=document.getElementById('sp-user-search')?.value||'';
+  const d=await get('/api/sponsor/users'+(q?`?q=${encodeURIComponent(q)}`:''));
+  const users=d.users||[];
+  const tb=document.getElementById('sp-user-tbody');
+  if(!users.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:18px">No players found.</td></tr>';return;}
+  tb.innerHTML=users.map(u=>`
+    <tr>
+      <td><strong>${u.username}</strong></td>
+      <td style="color:var(--text-dim)">${u.email||'—'}</td>
+      <td>${u.games_played}</td>
+      <td style="font-size:11px;color:var(--text-dim)">${u.created_at?.slice(0,10)||'—'}</td>
+      <td><button class="btn" style="font-size:10px;padding:3px 8px" onclick="openSPAssign('${u.username}')">Assign Bundle</button></td>
+    </tr>`).join('');
+}
+
+function openSPAssign(username){
+  document.getElementById('spa-user').value=username;
+  document.getElementById('spa-username').textContent=username;
+  const sel=document.getElementById('spa-bundle-sel');
+  sel.innerHTML=_spBundles.map(b=>`<option value="${b.id}">${b.name} (depth ${b.depth})</option>`).join('');
+  document.getElementById('spa-err').textContent='';
+  openModal('sp-assign');
+}
+
+function openSPAssignViaBundle(bundleId, bundleName){
+  // open users tab then show assign
+  loadSPUsers().then(()=>{
+    document.getElementById('spa-user').value='';
+    document.getElementById('spa-username').textContent='?';
+    const sel=document.getElementById('spa-bundle-sel');
+    sel.innerHTML=_spBundles.map(b=>`<option value="${b.id}" ${b.id===bundleId?'selected':''}>${b.name} (depth ${b.depth})</option>`).join('');
+    document.getElementById('spa-err').textContent='';
+    openModal('sp-assign');
+  });
+}
+
+async function doAssign(){
+  const username=document.getElementById('spa-user').value.trim();
+  const bundleId=document.getElementById('spa-bundle-sel').value;
+  const err=document.getElementById('spa-err');
+  if(!username){err.textContent='Enter a username.';return;}
+  const d=await post(`/api/sponsor/bundles/${bundleId}/assign`,{username});
+  if(!d.ok){err.textContent=d.error;return;}
+  closeModal('sp-assign');
+}
+
+async function loadSPInvites(){
+  const d=await get('/api/sponsor/invites');
+  const invites=d.invites||[];
+  const tb=document.getElementById('sp-invite-tbody');
+  if(!invites.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:18px">No invitations sent yet.</td></tr>';return;}
+  tb.innerHTML=invites.map(i=>`
+    <tr>
+      <td>${i.email}</td>
+      <td style="font:11px var(--mono);color:var(--accent3)">${i.token}</td>
+      <td style="color:var(--text-dim)">${i.bundle_id||'—'}</td>
+      <td>${i.used?'<span style="color:var(--text-dim)">Used</span>':'<span style="color:var(--valid)">Pending</span>'}</td>
+      <td style="font-size:11px;color:var(--text-dim)">${i.expires_at?.slice(0,10)||'—'}</td>
+    </tr>`).join('');
+}
+
+async function sendInvite(){
+  const err=document.getElementById('sp-inv-err');
+  const d=await post('/api/sponsor/invites',{
+    email:document.getElementById('sp-inv-email').value.trim(),
+    bundle_id:document.getElementById('sp-inv-bundle').value||null
+  });
+  if(!d.ok){err.textContent=d.error;return;}
+  const link=window.location.origin+d.invite_url;
+  document.getElementById('sp-inv-link').textContent=link;
+  document.getElementById('sp-inv-result').style.display='block';
+  document.getElementById('sp-inv-btn').style.display='none';
+}
+
+function statusClass(s){
+  if(s==='tiger_win'||s==='goat_win') return 'status-win';
+  if(s.includes('resign')) return 'status-loss';
+  if(s.includes('draw')) return 'status-draw';
+  return 'status-active';
+}
+
+async function loadSPReports(){
+  const d=await get('/api/sponsor/reports');
+  const games=d.games||[];
+  const tb=document.getElementById('sp-report-tbody');
+  if(!games.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:18px">No game data yet.</td></tr>';return;}
+  tb.innerHTML=games.map(g=>`
+    <tr>
+      <td><strong>${g.username}</strong></td>
+      <td><span class="badge badge-user">${g.human_role}</span></td>
+      <td><span class="depth-badge">${g.ai_depth}</span></td>
+      <td><span class="status-badge ${statusClass(g.status)}">${g.status.replace(/_/g,' ')}</span></td>
+      <td style="font-variant-numeric:tabular-nums">${g.duration_sec?Math.round(g.duration_sec)+'s':'—'}</td>
+      <td style="font-size:11px;color:var(--text-dim)">${g.created_at?.slice(0,16)||'—'}</td>
+    </tr>`).join('');
+}
+
+async function doLogout(){
+  await fetch('/api/auth/logout',{method:'POST'});
+  window.location.replace('/?t='+Date.now());
+}
+
+loadSPBundles();
+</script>
+</body>
+</html>

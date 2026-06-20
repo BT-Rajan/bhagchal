@@ -1,92 +1,518 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
 <title>Cogzi BEINT v1.0 — Admin Console</title>
 <link rel="stylesheet" href="/static/css/main.css">
 <script src="/static/js/theme.js"></script>
+<style>
+.adm { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.adm-full { grid-column:1/-1; }
+.search-bar { display:flex; gap:8px; }
+.search-bar input { flex:1; }
+.tbl { width:100%; border-collapse:collapse; font-size:12px; }
+.tbl th { text-align:left; font:600 10px var(--font); letter-spacing:.12em; text-transform:uppercase; color:var(--text-dim); padding:6px 8px; border-bottom:1px solid var(--border); }
+.tbl td { padding:8px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.tbl tr:hover td { background:var(--surface2); }
+.tbl tr:last-child td { border-bottom:none; }
+.action-btns { display:flex; gap:5px; }
+.tag-suspended { background:rgba(224,79,79,.12); color:var(--tiger); border:1px solid rgba(224,79,79,.3); font-size:9px; padding:1px 6px; border-radius:3px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+.depth-badge { background:var(--accent-dim); color:var(--accent2); border:1px solid var(--border2); font:600 11px var(--mono); padding:2px 8px; border-radius:4px; }
+.modal-overlay { display:none; position:fixed; inset:0; background:var(--overlay-bg); z-index:200; align-items:center; justify-content:center; }
+.modal-overlay.show { display:flex; }
+.modal-box { background:var(--surface); border:1px solid var(--border2); border-radius:10px; padding:26px; width:100%; max-width:400px; display:flex; flex-direction:column; gap:14px; }
+.modal-box h3 { font-size:14px; font-weight:600; }
+.modal-actions { display:flex; gap:8px; justify-content:flex-end; }
+.tab-bar { display:flex; gap:2px; border-bottom:1px solid var(--border); margin-bottom:14px; }
+.tab-btn { background:none; border:none; border-bottom:2px solid transparent; color:var(--text-dim); font:500 11px var(--font); letter-spacing:.08em; text-transform:uppercase; padding:8px 14px; cursor:pointer; margin-bottom:-1px; }
+.tab-btn.active { color:var(--accent2); border-bottom-color:var(--accent2); }
+.tab-pane { display:none; } .tab-pane.show { display:block; }
+.invite-box { background:var(--surface2); border:1px solid var(--border2); border-radius:5px; padding:10px; font:11px var(--mono); color:var(--accent3); word-break:break-all; margin-top:4px; }
+</style>
 </head>
 <body>
-
 <nav class="topnav">
   <div class="topnav-left">
     <a class="wordmark" href="/">
-      <div class="wm-icon">
-        <svg viewBox="0 0 18 18"><path d="M2 2h5v5H2zM11 2h5v5h-5zM2 11h5v5H2zM11 11h5v5h-5z"/></svg>
-      </div>
-      <div class="wm-text">
-        <div class="wm-name">Cogzi <em>BEINT</em></div>
-        <div class="wm-ver">v1.0</div>
-      </div>
+      <div class="wm-icon"><svg viewBox="0 0 18 18"><path d="M2 2h5v5H2zM11 2h5v5h-5zM2 11h5v5H2zM11 11h5v5h-5z"/></svg></div>
+      <div class="wm-text"><div class="wm-name">Cogzi <em>BEINT</em></div><div class="wm-ver">v1.0</div></div>
     </a>
     <select class="theme-select" onchange="setTheme(this.value)">
-      <option value="dark">Dark</option>
-      <option value="light">Light</option>
-      <option value="corp1">Corp 1 — Obsidian</option>
-      <option value="corp2">Corp 2 — Emerald</option>
+      <option value="dark">Dark</option><option value="light">Light</option>
+      <option value="corp1">Corp 1 — Obsidian</option><option value="corp2">Corp 2 — Emerald</option>
       <option value="corp3">Corp 3 — Violet</option>
     </select>
-    <div class="nav-sep"></div>
-    <div class="nav-crumb">Admin Console</div>
+    <div class="nav-sep"></div><div class="nav-crumb">Admin Console</div>
   </div>
   <div class="topnav-right">
     <div class="nav-sep"></div>
     <div class="nav-user"><strong>{{ user.username }}</strong></div>
     <span class="badge badge-admin">admin</span>
-    <a href="/"><button class="btn">← Session</button></a>
+    <a href="/"><button class="btn">← Home</button></a>
     <button class="btn btn-danger" onclick="doLogout()">Sign Out</button>
   </div>
 </nav>
 
-<div class="page-body" style="padding-top:22px">
-<div class="admin-layout">
+<div class="page-body" style="padding-top:20px">
 
-  <div class="card">
-    <div class="card-title">Registered Users</div>
-    <div id="user-list" style="display:flex;flex-direction:column;gap:6px">
-      {% for u in users %}
-      <div class="user-row" data-username="{{ u.username }}">
-        <div>
-          <span style="font-size:13px;font-weight:600">{{ u.username }}</span>
-          <span class="badge {% if u.role == 'admin' %}badge-admin{% else %}badge-user{% endif %}" style="margin-left:6px">{{ u.role }}</span>
-          <div class="user-info-sub">Games: {{ u.games_played }} &nbsp;·&nbsp; Joined: {{ u.created_at }}</div>
-        </div>
-        {% if u.role != 'admin' %}
-        <button class="btn btn-danger" style="font-size:10px;padding:4px 10px" onclick="deleteUser('{{ u.username }}')">Remove</button>
-        {% endif %}
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="showTab('users')">Users</button>
+  <button class="tab-btn"       onclick="showTab('bundles')">Game Bundles</button>
+  <button class="tab-btn"       onclick="showTab('invites')">Invites</button>
+  <button class="tab-btn"       onclick="showTab('stats')">Statistics</button>
+</div>
+
+<!-- ── USERS ── -->
+<div class="tab-pane show" id="tab-users">
+  <div class="adm">
+    <div class="card adm-full">
+      <div class="card-title">
+        User Management
+        <button class="btn btn-primary" style="font-size:10px;padding:5px 12px" onclick="openModal('create-user')">+ New User</button>
       </div>
-      {% endfor %}
+      <div class="search-bar">
+        <input class="field input" id="user-search" placeholder="Search username or email…" oninput="searchUsers()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font:13px var(--font);padding:8px 12px;outline:none">
+        <select id="role-filter" onchange="searchUsers()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font:12px var(--font);padding:8px 10px;outline:none">
+          <option value="">All Roles</option>
+          <option value="admin">Admin</option>
+          <option value="sponsor">Sponsor</option>
+          <option value="user">User</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="tbl" id="user-table">
+          <thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Games</th><th>Joined</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="user-tbody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
+</div>
 
-  <div class="card">
-    <div class="card-title">Platform Statistics</div>
-    <div style="display:flex;flex-direction:column;gap:10px;font-size:12px">
-      <div class="stat-row"><span class="stat-key">Total users</span><span class="stat-val">{{ users|length }}</span></div>
-      <div class="stat-row"><span class="stat-key">Admin accounts</span><span class="stat-val">{{ users|selectattr('role','equalto','admin')|list|length }}</span></div>
-      <div class="stat-row"><span class="stat-key">Total assessments</span><span class="stat-val">{{ users|sum(attribute='games_played') }}</span></div>
-      <div class="stat-row"><span class="stat-key">Active operator</span><span class="stat-val" style="color:var(--accent2)">{{ user.username }}</span></div>
+<!-- ── BUNDLES ── -->
+<div class="tab-pane" id="tab-bundles">
+  <div class="adm">
+    <div class="card adm-full">
+      <div class="card-title">
+        Game Bundles
+        <button class="btn btn-primary" style="font-size:10px;padding:5px 12px" onclick="openModal('create-bundle')">+ New Bundle</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="tbl" id="bundle-table">
+          <thead><tr><th>Name</th><th>Description</th><th>AI Depth</th><th>Games</th><th>Created By</th><th>Actions</th></tr></thead>
+          <tbody id="bundle-tbody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
+</div>
+
+<!-- ── INVITES ── -->
+<div class="tab-pane" id="tab-invites">
+  <div class="adm">
+    <div class="card adm-full">
+      <div class="card-title">
+        Invitations
+        <button class="btn btn-primary" style="font-size:10px;padding:5px 12px" onclick="openModal('create-invite')">+ Send Invite</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="tbl" id="invite-table">
+          <thead><tr><th>Email</th><th>Role</th><th>Token</th><th>Status</th><th>Expires</th></tr></thead>
+          <tbody id="invite-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── STATS ── -->
+<div class="tab-pane" id="tab-stats">
+  <div class="adm">
+    <div class="card" id="stats-card">
+      <div class="card-title">Platform Statistics</div>
+      <div id="stats-body" style="display:flex;flex-direction:column;gap:10px;font-size:12px"></div>
+    </div>
+  </div>
+</div>
 
 </div>
+
+<!-- ── MODALS ── -->
+
+<!-- Create User -->
+<div class="modal-overlay" id="modal-create-user">
+  <div class="modal-box">
+    <h3>Create User</h3>
+    <div class="field"><label>Username</label><input id="cu-user" type="text" placeholder="username"></div>
+    <div class="field"><label>Password</label><input id="cu-pass" type="password" placeholder="password"></div>
+    <div class="field"><label>Email</label><input id="cu-email" type="email" placeholder="email (optional)"></div>
+    <div class="field"><label>Role</label>
+      <select id="cu-role"><option value="user">User</option><option value="sponsor">Sponsor</option><option value="admin">Admin</option></select>
+    </div>
+    <div class="msg err" id="cu-err"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('create-user')">Cancel</button>
+      <button class="btn btn-primary" onclick="createUser()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit User -->
+<div class="modal-overlay" id="modal-edit-user">
+  <div class="modal-box">
+    <h3>Edit User — <span id="eu-title"></span></h3>
+    <input type="hidden" id="eu-username">
+    <div class="field"><label>Email</label><input id="eu-email" type="email"></div>
+    <div class="field"><label>Role</label>
+      <select id="eu-role"><option value="user">User</option><option value="sponsor">Sponsor</option><option value="admin">Admin</option></select>
+    </div>
+    <div class="field"><label>New Password <span style="text-transform:none;font-weight:400">(leave blank to keep)</span></label><input id="eu-pass" type="password" placeholder="••••••••"></div>
+    <div class="msg err" id="eu-err"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('edit-user')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveUser()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Assign Bundle -->
+<div class="modal-overlay" id="modal-assign-bundle">
+  <div class="modal-box">
+    <h3>Assign Bundle</h3>
+    <input type="hidden" id="ab-bundle-id">
+    <p style="font-size:12px;color:var(--text-dim)">Bundle: <strong id="ab-bundle-name"></strong></p>
+    <div class="field"><label>Username</label><input id="ab-username" type="text" placeholder="username to assign to"></div>
+    <div class="msg err" id="ab-err"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('assign-bundle')">Cancel</button>
+      <button class="btn btn-primary" onclick="assignBundle()">Assign</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create Bundle -->
+<div class="modal-overlay" id="modal-create-bundle">
+  <div class="modal-box">
+    <h3>New Game Bundle</h3>
+    <div class="field"><label>Bundle Name</label><input id="cb-name" type="text" placeholder="e.g. Assessment Round 1"></div>
+    <div class="field"><label>Description</label><input id="cb-desc" type="text" placeholder="optional"></div>
+    <div class="field">
+      <label>AI Depth (1 = easiest, 6 = hardest)</label>
+      <input id="cb-depth" type="range" min="1" max="6" value="3" oninput="document.getElementById('cb-depth-val').textContent=this.value">
+      <span style="font-size:12px;color:var(--accent2)">Depth: <span id="cb-depth-val">3</span></span>
+    </div>
+    <div class="field"><label>Number of Games</label><input id="cb-games" type="number" min="1" max="10" value="5"></div>
+    <div class="msg err" id="cb-err"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('create-bundle')">Cancel</button>
+      <button class="btn btn-primary" onclick="createBundle()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Bundle -->
+<div class="modal-overlay" id="modal-edit-bundle">
+  <div class="modal-box">
+    <h3>Edit Bundle</h3>
+    <input type="hidden" id="eb-id">
+    <div class="field"><label>Name</label><input id="eb-name" type="text"></div>
+    <div class="field"><label>Description</label><input id="eb-desc" type="text"></div>
+    <div class="field">
+      <label>AI Depth (1–6)</label>
+      <input id="eb-depth" type="range" min="1" max="6" oninput="document.getElementById('eb-depth-val').textContent=this.value">
+      <span style="font-size:12px;color:var(--accent2)">Depth: <span id="eb-depth-val">3</span></span>
+    </div>
+    <div class="field"><label>Number of Games</label><input id="eb-games" type="number" min="1" max="10"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('edit-bundle')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveBundle()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create Invite -->
+<div class="modal-overlay" id="modal-create-invite">
+  <div class="modal-box">
+    <h3>Send Invitation</h3>
+    <div class="field"><label>Email</label><input id="ci-email" type="email" placeholder="invitee@company.com"></div>
+    <div class="field"><label>Role</label>
+      <select id="ci-role"><option value="user">User</option><option value="sponsor">Sponsor</option></select>
+    </div>
+    <div class="field"><label>Attach Bundle (optional)</label>
+      <select id="ci-bundle"><option value="">— none —</option></select>
+    </div>
+    <div class="msg err" id="ci-err"></div>
+    <div id="ci-result" style="display:none">
+      <div class="msg ok">Invite created. Share this link:</div>
+      <div class="invite-box" id="ci-link"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('create-invite')">Close</button>
+      <button class="btn btn-primary" id="ci-send-btn" onclick="createInvite()">Send</button>
+    </div>
+  </div>
 </div>
 
 <script>
-async function deleteUser(username){
-  if(!confirm(`Remove user "${username}"? This cannot be undone.`))return;
-  const r=await fetch('/api/admin/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username})});
-  const d=await r.json();
-  if(d.ok) document.querySelector(`[data-username="${username}"]`).remove();
+const post = (url,b)=>fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json());
+const get  = url=>fetch(url).then(r=>r.json());
+const put  = (url,b)=>fetch(url,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json());
+const del  = url=>fetch(url,{method:'DELETE'}).then(r=>r.json());
+
+function showTab(name) {
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('show'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('show');
+  event.target.classList.add('active');
+  if (name==='users')   loadUsers();
+  if (name==='bundles') loadBundles();
+  if (name==='invites') loadInvites();
+  if (name==='stats')   loadStats();
 }
+
+function openModal(name) { document.getElementById('modal-'+name).classList.add('show'); }
+function closeModal(name){ document.getElementById('modal-'+name).classList.remove('show'); }
+
+// ── Users ──────────────────────────────────────────────────────────────────
+
+let _users = [];
+async function loadUsers() {
+  const q = document.getElementById('user-search')?.value||'';
+  const role = document.getElementById('role-filter')?.value||'';
+  let url = '/api/admin/users?';
+  if (q) url+=`q=${encodeURIComponent(q)}&`;
+  if (role) url+=`role=${role}`;
+  const d = await get(url);
+  _users = d.users||[];
+  renderUsers(_users);
+}
+
+function searchUsers() { loadUsers(); }
+
+function renderUsers(users) {
+  const tb = document.getElementById('user-tbody');
+  if (!users.length) { tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:18px">No users found.</td></tr>'; return; }
+  tb.innerHTML = users.map(u=>`
+    <tr data-username="${u.username}">
+      <td><strong>${u.username}</strong></td>
+      <td style="color:var(--text-dim)">${u.email||'—'}</td>
+      <td><span class="badge ${u.role==='admin'?'badge-admin':'badge-user'}">${u.role}</span></td>
+      <td style="font-variant-numeric:tabular-nums">${u.games_played}</td>
+      <td style="color:var(--text-dim);font-size:11px">${u.created_at?.slice(0,10)||'—'}</td>
+      <td>${u.suspended?'<span class="tag-suspended">Suspended</span>':'<span style="color:var(--valid);font-size:11px">Active</span>'}</td>
+      <td>
+        <div class="action-btns">
+          <button class="btn" style="font-size:10px;padding:3px 8px" onclick="openEditUser('${u.username}','${u.email||''}','${u.role}')">Edit</button>
+          ${u.role!=='admin'?`
+          <button class="btn ${u.suspended?'btn-ghost-green':'btn-resign'}" style="font-size:10px;padding:3px 8px"
+            onclick="toggleSuspend('${u.username}',${!u.suspended})">${u.suspended?'Reinstate':'Suspend'}</button>
+          <button class="btn btn-danger" style="font-size:10px;padding:3px 8px" onclick="deleteUser('${u.username}')">Delete</button>
+          `:''}
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+async function createUser() {
+  const err = document.getElementById('cu-err');
+  const d = await post('/api/admin/users',{
+    username: document.getElementById('cu-user').value.trim(),
+    password: document.getElementById('cu-pass').value,
+    email:    document.getElementById('cu-email').value.trim(),
+    role:     document.getElementById('cu-role').value
+  });
+  if (!d.ok){err.textContent=d.error;return;}
+  closeModal('create-user');
+  loadUsers();
+}
+
+function openEditUser(username, email, role) {
+  document.getElementById('eu-username').value = username;
+  document.getElementById('eu-title').textContent = username;
+  document.getElementById('eu-email').value = email;
+  document.getElementById('eu-role').value = role;
+  document.getElementById('eu-pass').value = '';
+  document.getElementById('eu-err').textContent = '';
+  openModal('edit-user');
+}
+
+async function saveUser() {
+  const username = document.getElementById('eu-username').value;
+  const updates = {
+    email: document.getElementById('eu-email').value.trim(),
+    role:  document.getElementById('eu-role').value,
+  };
+  const pw = document.getElementById('eu-pass').value;
+  if (pw) updates.password = pw;
+  const d = await put(`/api/admin/users/${username}`, updates);
+  if (!d.ok){document.getElementById('eu-err').textContent=d.error;return;}
+  closeModal('edit-user');
+  loadUsers();
+}
+
+async function toggleSuspend(username, suspend) {
+  await post(`/api/admin/users/${username}/suspend`,{suspend});
+  loadUsers();
+}
+
+async function deleteUser(username) {
+  if (!confirm(`Delete "${username}"? This is permanent.`)) return;
+  await del(`/api/admin/users/${username}`);
+  loadUsers();
+}
+
+// ── Bundles ────────────────────────────────────────────────────────────────
+
+let _bundles = [];
+async function loadBundles() {
+  const d = await get('/api/admin/bundles');
+  _bundles = d.bundles||[];
+  renderBundles(_bundles);
+  // populate invite bundle select
+  const sel = document.getElementById('ci-bundle');
+  if (sel) {
+    sel.innerHTML = '<option value="">— none —</option>' +
+      _bundles.map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
+  }
+}
+
+function renderBundles(bundles) {
+  const tb = document.getElementById('bundle-tbody');
+  if (!bundles.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:18px">No bundles yet.</td></tr>';return;}
+  tb.innerHTML = bundles.map(b=>`
+    <tr>
+      <td><strong>${b.name}</strong></td>
+      <td style="color:var(--text-dim);font-size:11px">${b.description||'—'}</td>
+      <td><span class="depth-badge">${b.depth}</span></td>
+      <td>${b.game_count}</td>
+      <td style="color:var(--text-dim);font-size:11px">${b.creator||'—'}</td>
+      <td>
+        <div class="action-btns">
+          <button class="btn" style="font-size:10px;padding:3px 8px" onclick="openAssign('${b.id}','${b.name}')">Assign</button>
+          <button class="btn" style="font-size:10px;padding:3px 8px" onclick="openEditBundle('${b.id}','${b.name}','${b.description||''}',${b.depth},${b.game_count})">Edit</button>
+          <button class="btn btn-danger" style="font-size:10px;padding:3px 8px" onclick="deleteBundle('${b.id}')">Delete</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+async function createBundle() {
+  const err = document.getElementById('cb-err');
+  const d = await post('/api/admin/bundles',{
+    name:       document.getElementById('cb-name').value.trim(),
+    description:document.getElementById('cb-desc').value.trim(),
+    depth:      parseInt(document.getElementById('cb-depth').value),
+    game_count: parseInt(document.getElementById('cb-games').value)
+  });
+  if (!d.ok){err.textContent=d.error;return;}
+  closeModal('create-bundle');
+  loadBundles();
+}
+
+function openEditBundle(id,name,desc,depth,games) {
+  document.getElementById('eb-id').value=id;
+  document.getElementById('eb-name').value=name;
+  document.getElementById('eb-desc').value=desc;
+  document.getElementById('eb-depth').value=depth;
+  document.getElementById('eb-depth-val').textContent=depth;
+  document.getElementById('eb-games').value=games;
+  openModal('edit-bundle');
+}
+
+async function saveBundle() {
+  const id = document.getElementById('eb-id').value;
+  await put(`/api/admin/bundles/${id}`,{
+    name:       document.getElementById('eb-name').value.trim(),
+    description:document.getElementById('eb-desc').value.trim(),
+    depth:      parseInt(document.getElementById('eb-depth').value),
+    game_count: parseInt(document.getElementById('eb-games').value)
+  });
+  closeModal('edit-bundle');
+  loadBundles();
+}
+
+async function deleteBundle(id) {
+  if (!confirm('Delete this bundle?')) return;
+  await del(`/api/admin/bundles/${id}`);
+  loadBundles();
+}
+
+function openAssign(bundleId, bundleName) {
+  document.getElementById('ab-bundle-id').value = bundleId;
+  document.getElementById('ab-bundle-name').textContent = bundleName;
+  document.getElementById('ab-username').value = '';
+  document.getElementById('ab-err').textContent = '';
+  openModal('assign-bundle');
+}
+
+async function assignBundle() {
+  const bundleId  = document.getElementById('ab-bundle-id').value;
+  const username  = document.getElementById('ab-username').value.trim();
+  const err       = document.getElementById('ab-err');
+  const d = await post(`/api/admin/bundles/${bundleId}/assign`,{username});
+  if (!d.ok){err.textContent=d.error;return;}
+  closeModal('assign-bundle');
+}
+
+// ── Invites ────────────────────────────────────────────────────────────────
+
+async function loadInvites() {
+  const d = await get('/api/admin/invites');
+  const invites = d.invites||[];
+  const tb = document.getElementById('invite-tbody');
+  if (!invites.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:18px">No invites sent yet.</td></tr>';return;}
+  tb.innerHTML = invites.map(i=>`
+    <tr>
+      <td>${i.email}</td>
+      <td><span class="badge badge-user">${i.role}</span></td>
+      <td style="font:11px var(--mono);color:var(--accent3)">${i.token}</td>
+      <td>${i.used?'<span style="color:var(--text-dim)">Used</span>':'<span style="color:var(--valid)">Pending</span>'}</td>
+      <td style="font-size:11px;color:var(--text-dim)">${i.expires_at?.slice(0,10)||'—'}</td>
+    </tr>`).join('');
+}
+
+async function createInvite() {
+  const err = document.getElementById('ci-err');
+  const d = await post('/api/admin/invites',{
+    email:     document.getElementById('ci-email').value.trim(),
+    role:      document.getElementById('ci-role').value,
+    bundle_id: document.getElementById('ci-bundle').value||null
+  });
+  if (!d.ok){err.textContent=d.error;return;}
+  const link = window.location.origin + d.invite_url;
+  document.getElementById('ci-link').textContent = link;
+  document.getElementById('ci-result').style.display='block';
+  document.getElementById('ci-send-btn').style.display='none';
+}
+
+// ── Stats ──────────────────────────────────────────────────────────────────
+
+async function loadStats() {
+  const ud = await get('/api/admin/users');
+  const users = ud.users||[];
+  const admins   = users.filter(u=>u.role==='admin').length;
+  const sponsors = users.filter(u=>u.role==='sponsor').length;
+  const regular  = users.filter(u=>u.role==='user').length;
+  const suspended= users.filter(u=>u.suspended).length;
+  const totalGames = users.reduce((s,u)=>s+(u.games_played||0),0);
+  document.getElementById('stats-body').innerHTML = `
+    <div class="stat-row"><span class="stat-key">Total users</span><span class="stat-val">${users.length}</span></div>
+    <div class="stat-row"><span class="stat-key">Admins</span><span class="stat-val">${admins}</span></div>
+    <div class="stat-row"><span class="stat-key">Sponsors</span><span class="stat-val">${sponsors}</span></div>
+    <div class="stat-row"><span class="stat-key">Players</span><span class="stat-val">${regular}</span></div>
+    <div class="stat-row"><span class="stat-key">Suspended</span><span class="stat-val" style="color:var(--tiger)">${suspended}</span></div>
+    <div class="stat-row"><span class="stat-key">Total assessments played</span><span class="stat-val">${totalGames}</span></div>
+  `;
+}
+
 async function doLogout(){
   await fetch('/api/auth/logout',{method:'POST'});
   window.location.replace('/?t='+Date.now());
 }
+
+// Load on start
+loadUsers();
 </script>
 </body>
 </html>

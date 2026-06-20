@@ -204,13 +204,18 @@ function applyState(d) {
 
   if (d.ai_action_type && d.ai_to != null && d.ai_to >= 0) {
     _locked = true;
-    const from = d.ai_from >= 0 ? d.ai_from : d.ai_to;
-    const piece = d.ai_action_type === 'place' ? 'goat' :
-      (d.human_role === 'tiger' ? 'goat' : 'tiger');
-    Board.animateMove(from, d.ai_to, piece, d.ai_captured, () => {
-      _locked = false;
-      postMoveStatus();
-    });
+    setStatus('Engine is processing…', 'info');
+    const u = Math.random();
+    const delayMs = Math.round(1500 + (Math.pow(u, 0.6) * 3700));
+    setTimeout(() => {
+      const from = d.ai_from >= 0 ? d.ai_from : d.ai_to;
+      const piece = d.ai_action_type === 'place' ? 'goat' :
+        (d.human_role === 'tiger' ? 'goat' : 'tiger');
+      Board.animateMove(from, d.ai_to, piece, d.ai_captured, () => {
+        _locked = false;
+        postMoveStatus();
+      });
+    }, delayMs);
   } else {
     postMoveStatus();
   }
@@ -498,24 +503,29 @@ async function doAction(actionType, extra = {}) {
     const justEnteredPhase2 = wasPhase1 && d.phase === 2 && d.status === 'active';
 
     if (d.ai_action_type && d.ai_to >= 0) {
-      setStatus('Engine responded.', 'info');
-      const aiFrom = d.ai_from >= 0 ? d.ai_from : d.ai_to;
-      const aiPiece = d.human_role === 'tiger' ? 'goat' : 'tiger';
-      Board.animateMove(aiFrom, d.ai_to, aiPiece, d.ai_captured, () => {
-        updateUI(d);
-        rebuildLog(d.move_log || []);
-        _locked = false;
-        Board.setBoard(d.board);
-        Board.draw();
-        postMoveStatus();
-        if (d.status !== 'active') showResult(d.status);
-        else if (justEnteredPhase2) showPhaseOverlay();
-        // Show next game button if available
-        if (d.next_game_available) {
-          const btn = $id('next-game-btn');
-          if (btn) { btn.style.display = 'inline-block'; btn.disabled = false; }
-        }
-      });
+      // Non-uniform delay: skewed toward 2-3s, occasionally slow (up to 5.2s)
+      const u = Math.random();
+      const delayMs = Math.round(1500 + (Math.pow(u, 0.6) * 3700));
+      setStatus('Engine is processing…', 'info');
+      setTimeout(() => {
+        setStatus('Engine responded.', 'info');
+        const aiFrom = d.ai_from >= 0 ? d.ai_from : d.ai_to;
+        const aiPiece = d.human_role === 'tiger' ? 'goat' : 'tiger';
+        Board.animateMove(aiFrom, d.ai_to, aiPiece, d.ai_captured, () => {
+          updateUI(d);
+          rebuildLog(d.move_log || []);
+          _locked = false;
+          Board.setBoard(d.board);
+          Board.draw();
+          postMoveStatus();
+          if (d.status !== 'active') showResult(d.status);
+          else if (justEnteredPhase2) showPhaseOverlay();
+          if (d.next_game_available) {
+            const btn = $id('next-game-btn');
+            if (btn) { btn.style.display = 'inline-block'; btn.disabled = false; }
+          }
+        });
+      }, delayMs);
     } else {
       updateUI(d);
       rebuildLog(d.move_log || []);

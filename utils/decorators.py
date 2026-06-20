@@ -1,38 +1,40 @@
-"""Utility decorators and helpers."""
-
 from functools import wraps
 from flask import session, jsonify
-
 from models.user import user_model
 
+def _get_user():
+    un = session.get('username')
+    return user_model.get_user(un) if un else None
 
 def login_required(f):
-    """Decorator to require authentication for a route."""
     @wraps(f)
-    def decorated(*args, **kwargs):
-        if 'username' not in session:
+    def decorated(*a, **kw):
+        if not session.get('username'):
             return jsonify({'ok': False, 'error': 'Not authenticated'}), 401
-        return f(*args, **kwargs)
+        return f(*a, **kw)
     return decorated
-
 
 def admin_required(f):
-    """Decorator to require admin role for a route."""
     @wraps(f)
-    def decorated(*args, **kwargs):
-        if 'username' not in session:
+    def decorated(*a, **kw):
+        user = _get_user()
+        if not user:
             return jsonify({'ok': False, 'error': 'Not authenticated'}), 401
-
-        user = user_model.get_user(session['username'])
-        if not user or user['role'] != 'admin':
+        if user['role'] != 'admin':
             return jsonify({'ok': False, 'error': 'Admin access required'}), 403
-
-        return f(*args, **kwargs)
+        return f(*a, **kw)
     return decorated
 
+def sponsor_required(f):
+    @wraps(f)
+    def decorated(*a, **kw):
+        user = _get_user()
+        if not user:
+            return jsonify({'ok': False, 'error': 'Not authenticated'}), 401
+        if user['role'] not in ('admin', 'sponsor'):
+            return jsonify({'ok': False, 'error': 'Sponsor access required'}), 403
+        return f(*a, **kw)
+    return decorated
 
 def current_user():
-    """Get the currently logged-in user, or None."""
-    if 'username' not in session:
-        return None
-    return user_model.get_user(session['username'])
+    return _get_user()
