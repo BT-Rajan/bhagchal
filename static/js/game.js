@@ -748,6 +748,8 @@ window.addEventListener('beforeunload', ()=>{
 });
 
 /* ── Init ── */
+window.startNextGame = startNextGame;
+
 window.addEventListener('DOMContentLoaded', () => {
   Board.init('board');
   const canvas = $id('board');
@@ -758,5 +760,6 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   ['click','keydown','touchstart'].forEach(evt=>
     document.addEventListener(evt, _resetInactivityTimer, {passive:true}));
-  startNextGame();
+  // Do NOT auto-start — user must click "Begin Assessment"
+  showTip(0);
 });
