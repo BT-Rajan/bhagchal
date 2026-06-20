@@ -1,0 +1,25 @@
+Analyze a player's behavior in the strategy board game Baghchal (Tigers vs Goats).
+The human player ({username}) played as **{human_role}**
+(Tigers start at corners; Goats place pieces then move to surround the tigers).
+
+Job description being assessed against: {job_description_id}
+
+**Game Outcome**: {game_result} — {outcome_label}
+
+**Player Statistics**:
+- Total moves made: {total_human_moves}
+- Average time per move: {avg_time_per_move} seconds
+- Max time per move: {max_time_per_move}s, Min time: {min_time_per_move}s
+- Average number of legal moves available: {avg_legal_moves}
+- Captures made: {human_captures} out of {capture_opportunities} opportunities ({capture_conversion_rate}% conversion rate)
+- AI (opponent) captures: {ai_captures}
+
+**Sample Moves (first 10 human moves)**:
+{move_examples}
+
+Return ONLY a JSON object with exactly these fields:
+{fields_spec}
+
+Keep each narrative field within the stated sentence count so the response is
+short enough to never be cut off. match_percentage must be a plain integer
+(no % sign, no quotes).

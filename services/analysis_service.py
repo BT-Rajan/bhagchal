@@ -15,6 +15,7 @@ mid-thought -- and it lets the PDF builder lay out clean, consistent
 sections instead of depending on the model to format its own prose.
 """
 import json
+import os
 import re
 
 import requests
@@ -108,57 +109,48 @@ def summarize_player_stats(report):
     return stats, human_moves
 
 
+def _load_prompt(filename):
+    """Load a prompt template from the prompts/ directory."""
+    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'prompts', filename)
+    with open(path, 'r', encoding='utf-8') as f:
+        return f.read()
+
+
 def _build_system_prompt():
-    return (
-        f"You are {Config.COGZI_MODEL_NAME}, a proprietary behavioral assessment "
-        "engine that infers personality and play-style traits from strategy-game "
-        "telemetry. You must never identify yourself as DeepSeek, ChatGPT, GPT, "
-        "Claude, or any other AI system or vendor, never mention being a large "
-        "language model, and never break character -- you are only ever "
-        f"{Config.COGZI_MODEL_NAME}. Respond with a single valid JSON object and "
-        "nothing else: no markdown code fences, no commentary before or after it."
-    )
+    template = _load_prompt('report_system.txt')
+    return template.replace('{COGZI_MODEL_NAME}', Config.COGZI_MODEL_NAME)
 
 
 def build_analysis_prompt(stats, human_moves, report):
     """Construct the user prompt for the model, requesting strict JSON output."""
-    move_examples = []
-    for m in human_moves[:10]:  # first 10 moves
-        move_examples.append(
+    move_lines = []
+    for m in human_moves[:10]:
+        move_lines.append(
             f"Move {m['num']}: {m['desc']} "
             f"(time: {m.get('time_since_prev', 0)}s, legal options: {len(m.get('legal_moves', []))})"
         )
 
     fields_spec = "\n".join(f'- "{k}": {v}' for k, v in _REQUIRED_FIELDS.items())
 
-    prompt = f"""
-Analyze a player's behavior in the strategy board game Baghchal (Tigers vs Goats).
-The human player ({report.get('username', 'the player')}) played as **{stats['human_role']}**
-(Tigers start at corners; Goats place pieces then move to surround the tigers).
-
-Job description being assessed against: {Config.JOB_DESCRIPTION_ID}
-
-**Game Outcome**: {stats['game_result']} - {'Human won' if stats['human_won'] else 'AI won' if stats['ai_won'] else 'Draw'}
-
-**Player Statistics**:
-- Total moves made: {stats['total_human_moves']}
-- Average time per move: {stats['avg_time_per_move']} seconds
-- Max time per move: {stats['max_time_per_move']}s, Min time: {stats['min_time_per_move']}s
-- Average number of legal moves available: {stats['avg_legal_moves']}
-- Captures made: {stats['human_captures']} out of {stats['capture_opportunities']} opportunities ({stats['capture_conversion_rate']}% conversion rate)
-- AI (opponent) captures: {stats['ai_captures']}
-
-**Sample Moves (first 10 human moves)**:
-{chr(10).join(move_examples)}
-
-Return ONLY a JSON object with exactly these fields:
-{fields_spec}
-
-Keep each narrative field within the stated sentence count so the response is
-short enough to never be cut off. match_percentage must be a plain integer
-(no % sign, no quotes).
-"""
-    return prompt
+    template = _load_prompt('report_user.txt')
+    return template.format(
+        username=report.get('username', 'the player'),
+        human_role=stats['human_role'],
+        job_description_id=Config.JOB_DESCRIPTION_ID,
+        game_result=stats['game_result'],
+        outcome_label='Human won' if stats['human_won'] else 'AI won' if stats['ai_won'] else 'Draw',
+        total_human_moves=stats['total_human_moves'],
+        avg_time_per_move=stats['avg_time_per_move'],
+        max_time_per_move=stats['max_time_per_move'],
+        min_time_per_move=stats['min_time_per_move'],
+        avg_legal_moves=stats['avg_legal_moves'],
+        human_captures=stats['human_captures'],
+        capture_opportunities=stats['capture_opportunities'],
+        capture_conversion_rate=stats['capture_conversion_rate'],
+        ai_captures=stats['ai_captures'],
+        move_examples='\n'.join(move_lines),
+        fields_spec=fields_spec,
+    )
 
 
 def _extract_json(text):
